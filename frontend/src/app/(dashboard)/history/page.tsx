@@ -56,10 +56,13 @@ export default function HistoryPage() {
             variant="destructive" 
             size="sm" 
             onClick={async () => {
+              if (!window.confirm("Are you sure you want to permanently clear all scan history? This action cannot be undone.")) {
+                return;
+              }
               try {
                 await clearHistory();
                 setEntries([]);
-                toast({ title: "History cleared", variant: "success" });
+                toast({ title: "History cleared successfully", variant: "success" });
               } catch {
                 toast({ title: "Failed to clear history", variant: "error" });
               }

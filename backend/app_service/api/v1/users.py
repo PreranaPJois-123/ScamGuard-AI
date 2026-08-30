@@ -71,9 +71,46 @@ def delete_current_user(
     current_user: User = Depends(get_current_user)
 ):
     service = UserService(db)
-    # delete the user entirely
     service.users.delete(current_user)
-    db.commit()
+
+@router.get("/me/export")
+@limiter.limit("10/minute")
+def export_current_user_data(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    from datetime import datetime, timezone
+    from app_service.services.message_service import MessageService
+    msg_service = MessageService(db)
+    history = msg_service.list_history(current_user.id, skip=0, limit=1000)
+    return {
+        "user": {
+            "id": str(current_user.id),
+            "email": current_user.email,
+            "full_name": current_user.full_name,
+            "role": current_user.role.value,
+            "created_at": current_user.created_at.isoformat() if current_user.created_at else None,
+            "preferences": current_user.preferences,
+        },
+        "history": [
+            {
+                "id": str(h.id),
+                "text": h.text,
+                "input_type": h.input_type,
+                "verdict": h.verdict,
+                "scam_probability": h.scam_probability,
+                "risk_level": h.risk_level,
+                "scam_category": h.scam_category,
+                "confidence_score": h.confidence_score,
+                "threat_score": h.threat_score,
+                "ai_explanation": h.ai_explanation,
+                "created_at": h.created_at.isoformat() if h.created_at else None,
+            }
+            for h in history
+        ],
+        "exported_at": datetime.now(timezone.utc).isoformat(),
+    }
 
 
 

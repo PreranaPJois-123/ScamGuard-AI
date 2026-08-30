@@ -34,3 +34,27 @@ export async function deleteAccount(): Promise<void> {
     method: "DELETE",
   });
 }
+
+export async function exportUserData(): Promise<{ user: unknown; history: unknown[]; exported_at: string }> {
+  return apiRequest<{ user: unknown; history: unknown[]; exported_at: string }>("/users/me/export", {
+    method: "GET",
+  });
+}
+
+export interface AdminStats {
+  users_count: number;
+  scans_count: number;
+  threat_counts: {
+    high: number;
+    medium: number;
+    low: number;
+  };
+}
+
+export async function getAdminStats(): Promise<AdminStats> {
+  return apiRequest<AdminStats>("/users/admin/stats");
+}
+
+export async function listUsers(skip = 0, limit = 50): Promise<User[]> {
+  return apiRequest<User[]>(`/users?skip=${skip}&limit=${limit}`);
+}

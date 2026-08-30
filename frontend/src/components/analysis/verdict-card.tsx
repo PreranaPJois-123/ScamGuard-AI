@@ -199,6 +199,13 @@ export function VerdictCard({ result, onFeedback }: VerdictCardProps) {
                 </div>
               )}
             </motion.div>
+
+            {/* Realistic Safety Disclaimer */}
+            <div className="pt-2 text-center">
+              <p className="text-xs text-muted-foreground/80 italic">
+                Notice: ScamGuard provides an automated heuristic and statistical risk assessment. It should not be treated as an absolute guarantee of safety. Always verify sensitive communications via independent official channels.
+              </p>
+            </div>
           </CardContent>
         </Card>
       </motion.div>

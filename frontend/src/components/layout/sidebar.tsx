@@ -17,14 +17,6 @@ import { useAuth } from "@/lib/auth/auth-context";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 
-const NAV_ITEMS = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/analyze", label: "Analyze Message", icon: ScanSearch },
-  { href: "/history", label: "History", icon: History },
-  { href: "/analytics", label: "Analytics", icon: BarChart3 },
-  { href: "/settings", label: "Settings", icon: Settings },
-] as const;
-
 interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
@@ -32,7 +24,16 @@ interface SidebarProps {
 
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
+
+  const navItems = [
+    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/analyze", label: "Analyze Message", icon: ScanSearch },
+    { href: "/history", label: "History", icon: History },
+    { href: "/analytics", label: "Analytics", icon: BarChart3 },
+    { href: "/settings", label: "Settings", icon: Settings },
+    ...(user?.role === "admin" ? [{ href: "/admin", label: "Admin Console", icon: ShieldAlert }] : []),
+  ];
 
   return (
     <>
@@ -74,7 +75,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         </div>
 
         <nav className="flex-1 space-y-1.5 px-4 py-6">
-          {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
+          {navItems.map(({ href, label, icon: Icon }) => {
             const isActive = pathname === href || pathname.startsWith(`${href}/`);
             return (
               <Link

@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Request, UploadFile, File, Form
+from fastapi import APIRouter, Depends, Request, UploadFile, File, Form, status
 from sqlalchemy.orm import Session
 
 from app_service.api.deps import get_current_user

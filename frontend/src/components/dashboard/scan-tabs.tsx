@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { FileText, Link as LinkIcon, Mail, Image as ImageIcon, File, QrCode } from "lucide-react";
+import { FileText, Link as LinkIcon, Mail, Image as ImageIcon, File, QrCode, Camera } from "lucide-react";
 import { FileUploadZone } from "./file-upload-zone";
+import { CameraScanner } from "./camera-scanner";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
@@ -16,7 +17,8 @@ const TABS = [
   { id: "text", label: "Text", icon: FileText, type: "text" },
   { id: "url", label: "URL", icon: LinkIcon, type: "url" },
   { id: "email", label: "Email", icon: Mail, type: "email" },
-  { id: "image", label: "Image", icon: ImageIcon, type: "image" },
+  { id: "image", label: "Image / OCR", icon: ImageIcon, type: "image" },
+  { id: "camera", label: "Live Camera", icon: Camera, type: "camera" },
   { id: "pdf", label: "PDF", icon: File, type: "pdf" },
   { id: "qr", label: "QR Code", icon: QrCode, type: "qr" },
 ];
@@ -28,6 +30,7 @@ export function ScanTabs({ onScan, isScanning = false }: ScanTabsProps) {
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
 
   const isFileTab = ["image", "pdf", "qr"].includes(activeTab);
+  const isCameraTab = activeTab === "camera";
 
   const handleScan = () => {
     if (isScanning) return;
@@ -35,7 +38,7 @@ export function ScanTabs({ onScan, isScanning = false }: ScanTabsProps) {
       if (selectedFiles.length > 0) {
         onScan([], selectedFiles, activeTab);
       }
-    } else {
+    } else if (!isCameraTab) {
       if (textValue.trim()) {
         onScan([textValue.trim()], [], activeTab);
       }
@@ -63,9 +66,9 @@ export function ScanTabs({ onScan, isScanning = false }: ScanTabsProps) {
                 setTextValue("");
                 setSelectedFiles([]);
               }}
-              className={`flex items-center space-x-2 px-6 py-4 text-sm font-medium transition-colors whitespace-nowrap ${
+              className={`flex items-center space-x-2 px-5 py-3.5 text-sm font-medium transition-colors whitespace-nowrap ${
                 isActive
-                  ? "border-b-2 border-primary text-primary"
+                  ? "border-b-2 border-primary text-primary font-semibold"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
               }`}
             >
@@ -77,7 +80,12 @@ export function ScanTabs({ onScan, isScanning = false }: ScanTabsProps) {
       </div>
 
       <div className="p-6">
-        {isFileTab ? (
+        {isCameraTab ? (
+          <CameraScanner
+            onCapture={(file) => onScan([], [file], "image")}
+            isScanning={isScanning}
+          />
+        ) : isFileTab ? (
           <div className="space-y-4">
             <FileUploadZone
               onFilesSelected={setSelectedFiles}
@@ -89,7 +97,13 @@ export function ScanTabs({ onScan, isScanning = false }: ScanTabsProps) {
           <div className="space-y-4">
             <Textarea
               ref={textAreaRef}
-              placeholder={`Enter ${activeTab} content to scan...`}
+              placeholder={
+                activeTab === "url"
+                  ? "Enter website URL to analyze (e.g. https://secure-bank-login.xyz)..."
+                  : activeTab === "email"
+                  ? "Paste raw email body or header text..."
+                  : "Paste suspicious SMS, WhatsApp message, or email body..."
+              }
               className="min-h-[200px] resize-y text-base"
               value={textValue}
               onChange={(e) => setTextValue(e.target.value)}
@@ -97,20 +111,22 @@ export function ScanTabs({ onScan, isScanning = false }: ScanTabsProps) {
           </div>
         )}
 
-        <div className="mt-6 flex justify-end">
-          <Button
-            onClick={handleScan}
-            disabled={isScanning || (isFileTab ? selectedFiles.length === 0 : !textValue.trim())}
-            size="lg"
-            className="w-full sm:w-auto"
-          >
-            {isScanning ? "Scanning..." : (
-              <>
-                Scan Now <kbd className="ml-2 hidden sm:inline-block rounded bg-primary-foreground/20 px-1.5 py-0.5 text-[10px] font-mono font-medium">⌘↵</kbd>
-              </>
-            )}
-          </Button>
-        </div>
+        {!isCameraTab && (
+          <div className="mt-6 flex justify-end">
+            <Button
+              onClick={handleScan}
+              disabled={isScanning || (isFileTab ? selectedFiles.length === 0 : !textValue.trim())}
+              size="lg"
+              className="w-full sm:w-auto"
+            >
+              {isScanning ? "Scanning..." : (
+                <>
+                  Scan Now <kbd className="ml-2 hidden sm:inline-block rounded bg-primary-foreground/20 px-1.5 py-0.5 text-[10px] font-mono font-medium">⌘↵</kbd>
+                </>
+              )}
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );
