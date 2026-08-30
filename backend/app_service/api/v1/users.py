@@ -6,7 +6,13 @@ from fastapi import APIRouter, Depends, Request, status, UploadFile, File
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
-from fastapi_cache.decorator import cache
+try:
+    from fastapi_cache.decorator import cache
+except ImportError:
+    def cache(*args, **kwargs):
+        def decorator(func):
+            return func
+        return decorator
 
 from app_service.api.deps import get_current_user, require_admin
 from app_service.core.rate_limit import limiter

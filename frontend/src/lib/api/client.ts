@@ -27,7 +27,7 @@ interface RequestOptions {
 // URLs by next.config.js's rewrites() -- see that file for why. The
 // browser never makes a cross-origin request to either backend.
 const APP_API_URL = "/backend-api/api/v1";
-const API_TIMEOUT_MS = 10000;
+const API_TIMEOUT_MS = 60000;
 
 let refreshPromise: Promise<TokenPair | null> | null = null;
 
@@ -80,6 +80,12 @@ async function parseErrorBody(response: Response): Promise<ApiErrorBody> {
     }
     return { error_code: "UNKNOWN_ERROR", message: "An unexpected error occurred." };
   } catch {
+    if (response.status >= 500) {
+      return {
+        error_code: "SERVICE_UNAVAILABLE",
+        message: "The backend server is starting up or temporarily busy. Please wait a moment and try again.",
+      };
+    }
     return { error_code: "UNKNOWN_ERROR", message: `Request failed with status ${response.status}.` };
   }
 }

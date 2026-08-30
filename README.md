@@ -1,77 +1,155 @@
-# ScamGuard - AI-Powered Cybersecurity Intelligence Platform
+﻿# ScamGuard — AI-Powered Online Scam & Fraud Detection System
 
-## Introduction
-ScamGuard is an advanced, AI-driven cybersecurity intelligence platform designed to protect organizations and users from sophisticated digital threats, phishing campaigns, and fraudulent activities. It leverages cutting-edge machine learning and real-time scanning capabilities to identify, analyze, and neutralize scams before they cause harm.
+ScamGuard (VisionGuard AI) is a full-stack, production-grade cybersecurity intelligence platform designed to detect phishing attacks, lottery fraud, UPI/banking scams, and social engineering in real time using Machine Learning and Explainable AI (XAI).
 
-## Core Features
-- **Explainable AI**: Understand exactly why a threat was flagged with detailed, transparent AI reasoning.
-- **Multi-Channel Scanners**: Comprehensive scanning across email, SMS, web, and social media channels.
-- **Enterprise Admin**: Robust administrative controls, user management, and organization-wide security policies.
-- **Premium Exports**: Generate detailed, compliance-ready reports and export data for further analysis.
+---
 
-## Architecture
+## 🌐 Live Production Demo
 
-```mermaid
+- **Frontend & App URL**: [https://frontend-psi-ebon-83.vercel.app](https://frontend-psi-ebon-83.vercel.app)
+- **Backend API Base**: [https://scamguard-app-service.onrender.com](https://scamguard-app-service.onrender.com)
+- **Backend Health Check**: [https://scamguard-app-service.onrender.com/api/v1/health](https://scamguard-app-service.onrender.com/api/v1/health)
+- **ML Service Health Check**: [https://scamguard-ml-service.onrender.com/api/v1/health](https://scamguard-ml-service.onrender.com/api/v1/health)
+
+> **Note on Free-Tier Sleep:** Render instances spin down after 15 minutes of inactivity. If testing after an idle period, allow 30–45 seconds for initial wake-up. The frontend is configured with generous 60-second timeouts to handle cold-starts smoothly.
+
+---
+
+## 🎯 Key Features
+
+- **Real-Time Detection**: Classifies messages as legitimate or scam with high-confidence probability scores.
+- **Explainable AI (XAI)**: Identifies top contributing tokens/keywords, threat scores, risk dimensions (urgency, financial, credential theft, etc.), and suggested next steps.
+- **Multi-Channel Scanners**: Supports raw text, URLs, emails (.eml/text), images (OCR), PDFs, and QR codes.
+- **Enterprise Authentication**: Secure user registration, login, JWT access/refresh token rotation, and Role-Based Access Control (RBAC).
+- **Scan History & Analytics**: View previous scans, provide accuracy feedback, and inspect threat summaries.
+
+---
+
+## 🏗️ System Architecture
+
+`mermaid
 graph TD
-    Client[Web/Mobile Client] -->|HTTPS| API[API Gateway / App Service]
-    API -->|gRPC / HTTP| ML[ML Service]
-    API --> DB[(PostgreSQL Database)]
-    API --> Cache[(Redis Cache)]
-    ML --> Model[(Model Registry)]
-```
+    Client[Web Browser] -->|HTTPS| Frontend[Next.js 14 Frontend - Vercel / Port 3000]
+    Frontend -->|Same-Origin /backend-api Rewrite| AppService[FastAPI App Service - Port 8000]
+    AppService -->|SQLAlchemy / Alembic| DB[(PostgreSQL / SQLite)]
+    AppService -->|HTTP JSON /internal/predict| MLService[FastAPI ML Inference Service - Port 8002]
+    MLService -->|Joblib Serialization| ModelRegistry[(Trained ML Artifacts - Naive Bayes / TF-IDF)]
+`
 
-## Setup Guide
+---
 
-### Option 1: Docker Compose (Recommended)
-1. Ensure Docker and Docker Compose are installed on your system.
-2. Clone the repository and navigate to the project root.
-3. Start the application:
-   ```bash
-   cd infra
-   docker-compose up -d --build
-   ```
-4. Access the application at `http://localhost:3000` (frontend), the API at `http://localhost:8000` (app_service), and `http://localhost:8002` (ml_service).
+## 🚀 Getting Started
 
-### Option 2: Local Python/Node Setup
-1. **App Service (Python)**:
-   - Navigate to the `backend` directory.
-   - Install dependencies: `pip install -r requirements.txt`
-   - Run migrations: `alembic upgrade head` (or use sqlite default)
-   - Start the server: `uvicorn app_service.main:app --port 8000 --reload`
-2. **ML Service (Python)**:
-   - In a new terminal, navigate to the `backend` directory.
-   - Start the ML service: `uvicorn ml_service.main:app --port 8002 --reload`
-3. **Frontend (Node)**:
-   - Navigate to the `frontend` directory.
-   - Install dependencies: `npm install`
-   - Start the dev server: `npm run dev`
+### Prerequisites
+- **Node.js**: v18+ or v20+ LTS
+- **Python**: v3.10, v3.11, or v3.12
+- **Docker & Docker Compose**: Optional (recommended for one-command containerized run)
 
-## Environment Variables
+---
 
-For local development without Docker, use the following environments:
+### Option A: One-Command Startup with Docker Compose (Recommended)
 
-**Backend (`backend/.env`)**
-Copy `backend/.env.example` to `backend/.env` and generate a secure `SECRET_KEY`.
+From the project root directory, run:
 
-**Frontend (`frontend/.env.local`)**
-Copy `frontend/.env.example` to `frontend/.env.local`. It defaults to:
-```env
-APP_SERVICE_URL=http://127.0.0.1:8000
-```
+`ash
+docker compose up --build
+`
 
-## Troubleshooting and Deployment
+This starts all services together:
+- **Web UI**: [http://localhost:3000](http://localhost:3000) (or via Nginx on port 80)
+- **Backend API**: [http://localhost:8000](http://localhost:8000)
+- **API Docs (Swagger)**: [http://localhost:8000/docs](http://localhost:8000/docs)
+- **ML Service**: [http://localhost:8002](http://localhost:8002)
+- **PostgreSQL**: localhost:5432
 
-### Troubleshooting
-- **Database Connection Issues**: Ensure PostgreSQL is running and the `DATABASE_URL` is correct. If using Docker, verify the DB container is healthy. The default development setup uses SQLite.
-- **Model Loading Errors**: Ensure the ML service has access to the model artifacts directory and sufficient memory.
+---
 
-### Live Demo
-The application is currently deployed via Serveo for public access.
-- **Frontend / Live Demo URL**: [https://13243a1b972683b1-103-40-80-2.serveousercontent.com](https://13243a1b972683b1-103-40-80-2.serveousercontent.com)
-- **Backend API Base**: [https://13243a1b972683b1-103-40-80-2.serveousercontent.com/backend-api](https://13243a1b972683b1-103-40-80-2.serveousercontent.com/backend-api)
+### Option B: Local Setup Without Docker (VS Code / Terminal)
 
-### Production Deployment (Docker Compose)
-1. Navigate to `infra/`
-2. Copy `infra/.env.example` to `infra/.env` and update the secrets (e.g. `POSTGRES_PASSWORD`, `SECRET_KEY`).
-3. Run `docker compose up -d --build`. This will start the App Service, ML Service, Frontend, PostgreSQL DB, and Nginx reverse proxy.
-4. Access the application on port 80.
+Open **three terminal windows** in your IDE/command prompt:
+
+#### Terminal 1 — Backend App Service
+`ash
+cd backend
+python -m venv venv
+# Windows:
+venv\Scripts\activate
+# macOS/Linux:
+# source venv/bin/activate
+
+pip install -r requirements.txt
+# Starts on http://localhost:8000 (uses local SQLite database automatically if PostgreSQL is not set)
+uvicorn app_service.main:app --port 8000 --reload
+`
+
+#### Terminal 2 — ML Inference Service
+`ash
+cd backend
+# Windows:
+venv\Scripts\activate
+# macOS/Linux:
+# source venv/bin/activate
+
+pip install -r requirements-ml.txt
+# Starts on http://localhost:8002 (uses pre-trained models bundled in backend/artifacts)
+uvicorn ml_service.main:app --port 8002 --reload
+`
+
+#### Terminal 3 — Frontend UI
+`ash
+cd frontend
+npm install
+npm run dev
+`
+Open **[http://localhost:3000](http://localhost:3000)** in your browser.
+
+---
+
+## 🧪 Testing and Verification
+
+The project includes an automated test suite with **158 unit and integration tests**.
+
+Run all tests:
+`ash
+cd backend
+python -m pytest tests -v
+python -m pytest ml_service/tests -v
+python -m pytest ml_common/tests ml_training/tests -v
+`
+
+---
+
+## 📁 Repository Structure
+
+`
+scamguard-fullstack/
+├── docker-compose.yml          # Root one-command multi-container setup
+├── backend/
+│   ├── app_service/            # Core business logic, auth, REST API routes
+│   │   ├── api/v1/             # Endpoints: auth, messages, users, health
+│   │   ├── core/               # Config, JWT security, exceptions, rate-limiting
+│   │   ├── db/                 # Models, database session, SQLite/PostgreSQL
+│   │   └── services/           # Business logic & extraction service
+│   ├── ml_service/             # Dedicated ML inference microservice
+│   ├── ml_training/            # ML model training scripts & datasets
+│   ├── ml_common/              # Shared NLP tokenizers, TF-IDF vectorizers
+│   ├── artifacts/              # Bundled trained ML model weights & metadata
+│   ├── requirements.txt        # App service dependencies
+│   └── requirements-ml.txt     # ML service dependencies
+├── frontend/                   # Next.js 14 React frontend with Tailwind CSS
+│   ├── src/app/                # App router: login, register, dashboard, analyze
+│   ├── src/components/         # Reusable UI widgets, badges, verdict cards
+│   └── src/lib/api/            # Typed API client with auto token refresh
+├── infra/
+│   └── docker/                 # Dockerfiles for each microservice
+└── docs/                       # Architecture documentation and specs
+`
+
+---
+
+## 🔒 Security Best Practices
+
+- Passwords hashed using bcrypt.
+- JWT access tokens with short expiry (15m) + secure refresh token rotation (7d).
+- Strict Content Security Policy (CSP) & CORS configuration.
+- Rate-limiting enabled via SlowAPI on sensitive auth & prediction routes.

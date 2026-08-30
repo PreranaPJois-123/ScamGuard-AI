@@ -20,7 +20,7 @@ __pycache__/
 .env
 .env.*
 !.env.example
-artifacts/
+!backend/artifacts/
 ml_training/data/
 coverage_html_report/
 .coverage
@@ -35,4 +35,6 @@ build/
 .env.production
 .env.development
 !.env.example
+*.tsbuildinfo
+.vercel/
 

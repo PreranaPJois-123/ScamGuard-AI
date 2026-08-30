@@ -1,19 +1,12 @@
 import email
-import httpx
-from bs4 import BeautifulSoup
-from fastapi import UploadFile
-from pypdf import PdfReader
-from pyzbar.pyzbar import decode
-from PIL import Image
-import pytesseract
 import io
 import os
+import httpx
+from fastapi import UploadFile
 
 from app_service.core.config import get_settings
 
 settings = get_settings()
-if settings.TESSERACT_CMD:
-    pytesseract.pytesseract.tesseract_cmd = settings.TESSERACT_CMD
 
 class ExtractionService:
     @staticmethod
@@ -24,7 +17,10 @@ class ExtractionService:
             if not text:
                 raise ValueError("URL text must be provided for URL input_type.")
             try:
-                # Need sync get, httpx allows it
+                try:
+                    from bs4 import BeautifulSoup
+                except ImportError:
+                    raise ValueError("Package 'beautifulsoup4' is required for URL extraction.")
                 response = httpx.get(text, timeout=10.0)
                 response.raise_for_status()
                 soup = BeautifulSoup(response.text, 'html.parser')
@@ -57,8 +53,12 @@ class ExtractionService:
                             body += part.get_payload(decode=True).decode(part.get_content_charset() or 'utf-8', errors='ignore')
                         elif part.get_content_type() == "text/html" and not body:
                             html = part.get_payload(decode=True).decode(part.get_content_charset() or 'utf-8', errors='ignore')
-                            soup = BeautifulSoup(html, 'html.parser')
-                            body = soup.get_text(separator=' ', strip=True)
+                            try:
+                                from bs4 import BeautifulSoup
+                                soup = BeautifulSoup(html, 'html.parser')
+                                body = soup.get_text(separator=' ', strip=True)
+                            except ImportError:
+                                body = html
                 else:
                     body = msg.get_payload(decode=True).decode(msg.get_content_charset() or 'utf-8', errors='ignore')
                 
@@ -71,12 +71,16 @@ class ExtractionService:
             if not file:
                 raise ValueError("File must be provided for QR input_type.")
             try:
+                try:
+                    from PIL import Image
+                    from pyzbar.pyzbar import decode
+                except ImportError:
+                    raise ValueError("Packages 'Pillow' and 'pyzbar' are required for QR extraction.")
                 img = Image.open(io.BytesIO(file.file.read()))
                 decoded_objects = decode(img)
                 if not decoded_objects:
                     raise ValueError("No QR code found in the image.")
                 
-                # Take the first one
                 obj = decoded_objects[0]
                 data = obj.data.decode('utf-8')
                 return data, {"qr_type": obj.type}
@@ -87,6 +91,13 @@ class ExtractionService:
             if not file:
                 raise ValueError("File must be provided for IMAGE input_type.")
             try:
+                try:
+                    from PIL import Image
+                    import pytesseract
+                except ImportError:
+                    raise ValueError("Packages 'Pillow' and 'pytesseract' are required for IMAGE OCR extraction.")
+                if settings.TESSERACT_CMD:
+                    pytesseract.pytesseract.tesseract_cmd = settings.TESSERACT_CMD
                 img = Image.open(io.BytesIO(file.file.read()))
                 extracted_text = pytesseract.image_to_string(img)
                 return extracted_text.strip(), {"ocr_detected": True}
@@ -97,6 +108,10 @@ class ExtractionService:
             if not file:
                 raise ValueError("File must be provided for PDF input_type.")
             try:
+                try:
+                    from pypdf import PdfReader
+                except ImportError:
+                    raise ValueError("Package 'pypdf' is required for PDF extraction.")
                 reader = PdfReader(io.BytesIO(file.file.read()))
                 extracted_text = ""
                 for page in reader.pages:

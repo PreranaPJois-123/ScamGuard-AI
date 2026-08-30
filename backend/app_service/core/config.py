@@ -33,7 +33,10 @@ class Settings(BaseSettings):
     API_V1_PREFIX: str = "/api/v1"
 
     # Security / JWT
-    SECRET_KEY: str = Field(..., min_length=32)
+    SECRET_KEY: str = Field(
+        default="scamguard_development_secret_key_minimum_32_chars_123456789",
+        min_length=32,
+    )
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7

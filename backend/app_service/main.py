@@ -23,13 +23,23 @@ configure_logging()
 settings = get_settings()
 
 
-from prometheus_fastapi_instrumentator import Instrumentator
-from fastapi_cache import FastAPICache
-from fastapi_cache.backends.inmemory import InMemoryBackend
+try:
+    from prometheus_fastapi_instrumentator import Instrumentator
+    HAS_PROMETHEUS = True
+except ImportError:
+    HAS_PROMETHEUS = False
+
+try:
+    from fastapi_cache import FastAPICache
+    from fastapi_cache.backends.inmemory import InMemoryBackend
+    HAS_FASTAPI_CACHE = True
+except ImportError:
+    HAS_FASTAPI_CACHE = False
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    FastAPICache.init(InMemoryBackend())
+    if HAS_FASTAPI_CACHE:
+        FastAPICache.init(InMemoryBackend())
     try:
         with engine.connect() as connection:
             connection.execute(text("SELECT 1"))
@@ -41,7 +51,8 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title=settings.APP_NAME, debug=settings.DEBUG, lifespan=lifespan)
 
-Instrumentator().instrument(app).expose(app)
+if HAS_PROMETHEUS:
+    Instrumentator().instrument(app).expose(app)
 
 @app.middleware("http")
 async def add_security_headers(request: Request, call_next):
