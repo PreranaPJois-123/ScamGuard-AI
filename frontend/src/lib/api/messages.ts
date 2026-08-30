@@ -2,11 +2,19 @@ import { apiRequest } from "@/lib/api/client";
 import type { AnalysisResult } from "@/types";
 
 export function analyzeMessage(text: string): Promise<AnalysisResult> {
-  return apiRequest<AnalysisResult>("/messages/analyze", { method: "POST", body: { text } });
+  return apiRequest<AnalysisResult>("/messages/analyze", { method: "POST", body: { text, input_type: "TEXT" } });
 }
 
 export function getHistory(skip = 0, limit = 50): Promise<AnalysisResult[]> {
   return apiRequest<AnalysisResult[]>(`/messages/history?skip=${skip}&limit=${limit}`);
+}
+
+export function clearHistory(): Promise<void> {
+  return apiRequest<void>("/messages/history", { method: "DELETE" });
+}
+
+export function deleteMessage(id: string): Promise<void> {
+  return apiRequest<void>(`/messages/${id}`, { method: "DELETE" });
 }
 
 export function submitFeedback(predictionId: string, isAccurate: boolean): Promise<AnalysisResult> {

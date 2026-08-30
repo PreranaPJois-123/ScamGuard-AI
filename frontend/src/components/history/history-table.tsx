@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useState, memo, useMemo, useCallback, useRef } from "react";
-import { ChevronDown, ChevronUp, History as HistoryIcon, ThumbsDown, ThumbsUp, Search, FileText, Link as LinkIcon, Mail, Image as ImageIcon, File as FileIcon, QrCode, Download } from "lucide-react";
+import { ChevronDown, ChevronUp, History as HistoryIcon, ThumbsDown, ThumbsUp, Search, FileText, Link as LinkIcon, Mail, Image as ImageIcon, File as FileIcon, QrCode, Download, Trash2 } from "lucide-react";
 import { RiskBadge } from "@/components/analysis/risk-badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -20,6 +20,7 @@ import type { AnalysisResult } from "@/types";
 interface HistoryTableProps {
   entries: AnalysisResult[];
   onFeedback: (predictionId: string, isAccurate: boolean) => void;
+  onDelete?: (predictionId: string) => void;
 }
 
 function getInputIcon(type?: string | null) {
@@ -35,7 +36,7 @@ function getInputIcon(type?: string | null) {
   }
 }
 
-export const HistoryTable = memo(function HistoryTable({ entries, onFeedback }: HistoryTableProps) {
+export const HistoryTable = memo(function HistoryTable({ entries, onFeedback, onDelete }: HistoryTableProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterVerdict, setFilterVerdict] = useState("all");
@@ -211,18 +212,34 @@ export const HistoryTable = memo(function HistoryTable({ entries, onFeedback }: 
                       <td className="px-6 py-4 text-foreground">{scamCategoryLabel(entry.scam_category)}</td>
                       <td className="px-6 py-4 text-muted-foreground whitespace-nowrap">{formatDate(entry.created_at)}</td>
                       <td className="px-6 py-4 text-right">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setExpandedId(isExpanded ? null : entry.id);
-                          }}
-                          aria-label={isExpanded ? "Collapse details" : "Expand details"}
-                        >
-                          {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                        </Button>
+                        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          {onDelete && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 rounded-full text-destructive hover:bg-destructive/10 hover:text-destructive"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onDelete(entry.id);
+                              }}
+                              aria-label="Delete entry"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 rounded-full"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setExpandedId(isExpanded ? null : entry.id);
+                            }}
+                            aria-label={isExpanded ? "Collapse details" : "Expand details"}
+                          >
+                            {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                     <AnimatePresence>

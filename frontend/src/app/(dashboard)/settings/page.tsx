@@ -1,23 +1,43 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
-import { User, Shield, Key, AlertTriangle, Check } from "lucide-react";
+import { User as UserIcon, Shield, Key, AlertTriangle } from "lucide-react";
+import { useAuth } from "@/lib/auth/auth-context";
+import { updateProfile, changePassword, deleteAccount } from "@/lib/api/users";
+import { ApiError } from "@/lib/api/client";
 
 export default function SettingsPage() {
   const { toast } = useToast();
+  const { user, refreshUser, logout } = useAuth();
   const [activeTab, setActiveTab] = useState("profile");
+  
   const [fullName, setFullName] = useState("");
   const [darkMode, setDarkMode] = useState(true);
   const [emailNotifications, setEmailNotifications] = useState(true);
+  
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [showDangerModal, setShowDangerModal] = useState(false);
+  
+  const [isSubmittingProfile, setIsSubmittingProfile] = useState(false);
+  const [isSubmittingPassword, setIsSubmittingPassword] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      setFullName(user.full_name || "");
+      if (user.preferences) {
+        setDarkMode(user.preferences.theme === "dark");
+        setEmailNotifications(user.preferences.email_notifications !== false);
+      }
+    }
+  }, [user]);
 
   const TABS = [
-    { id: "profile", label: "Profile", icon: User },
+    { id: "profile", label: "Profile", icon: UserIcon },
     { id: "security", label: "Security", icon: Shield },
     { id: "api", label: "API Keys", icon: Key },
     { id: "danger", label: "Danger Zone", icon: AlertTriangle, danger: true },
@@ -25,18 +45,58 @@ export default function SettingsPage() {
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast({ title: "Profile updated successfully", variant: "success" });
-  };
-
-  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      toast({ title: "Avatar uploaded successfully", variant: "success" });
+    setIsSubmittingProfile(true);
+    try {
+      await updateProfile({
+        full_name: fullName,
+        preferences: {
+          ...user?.preferences,
+          theme: darkMode ? "dark" : "light",
+          email_notifications: emailNotifications,
+        }
+      });
+      await refreshUser();
+      toast({ title: "Profile updated successfully", variant: "success" });
+    } catch (error) {
+      const msg = error instanceof ApiError ? error.message : "Failed to update profile";
+      toast({ title: msg, variant: "error" });
+    } finally {
+      setIsSubmittingProfile(false);
     }
   };
 
-  const handleDeleteAccount = () => {
-    setShowDangerModal(false);
-    toast({ title: "Account deletion requested", variant: "error" });
+  const handleUpdatePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentPassword || !newPassword) {
+      toast({ title: "Please fill in all password fields", variant: "error" });
+      return;
+    }
+    setIsSubmittingPassword(true);
+    try {
+      await changePassword(currentPassword, newPassword);
+      setCurrentPassword("");
+      setNewPassword("");
+      toast({ title: "Password updated successfully", variant: "success" });
+    } catch (error) {
+      const msg = error instanceof ApiError ? error.message : "Failed to update password";
+      toast({ title: msg, variant: "error" });
+    } finally {
+      setIsSubmittingPassword(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    setIsDeleting(true);
+    try {
+      await deleteAccount();
+      await logout();
+      toast({ title: "Account deleted", variant: "success" });
+    } catch (error) {
+      const msg = error instanceof ApiError ? error.message : "Failed to delete account";
+      toast({ title: msg, variant: "error" });
+      setShowDangerModal(false);
+      setIsDeleting(false);
+    }
   };
 
   const ToggleSwitch = ({ checked, onChange }: { checked: boolean, onChange: (c: boolean) => void }) => (
@@ -91,8 +151,8 @@ export default function SettingsPage() {
                 
                 <form onSubmit={handleUpdateProfile} className="flex flex-col gap-6 max-w-xl">
                   <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium">Avatar</label>
-                    <input type="file" accept="image/*" onChange={handleAvatarUpload} className="text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 cursor-pointer" />
+                    <label className="text-sm font-medium">Email</label>
+                    <input type="text" value={user?.email || ""} disabled className="h-10 rounded-md border border-input bg-muted px-3 text-sm focus:outline-none opacity-70 cursor-not-allowed" />
                   </div>
                   
                   <div className="flex flex-col gap-2">
@@ -118,7 +178,7 @@ export default function SettingsPage() {
                     </div>
                   </div>
                   
-                  <Button type="submit" className="w-fit mt-4 bg-primary text-primary-foreground shadow-[0_0_15px_rgba(59,130,246,0.3)]">Save Changes</Button>
+                  <Button type="submit" isLoading={isSubmittingProfile} className="w-fit mt-4 bg-primary text-primary-foreground shadow-sm">Save Changes</Button>
                 </form>
               </motion.div>
             )}
@@ -128,17 +188,17 @@ export default function SettingsPage() {
                 <h2 className="text-xl font-semibold mb-1">Security</h2>
                 <p className="text-sm text-muted-foreground mb-6">Manage your password and security settings.</p>
                 
-                <div className="flex flex-col gap-6 max-w-xl">
+                <form onSubmit={handleUpdatePassword} className="flex flex-col gap-6 max-w-xl">
                   <div className="flex flex-col gap-2">
                     <label className="text-sm font-medium">Current Password</label>
-                    <input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} className="h-10 rounded-md border border-input bg-background/50 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all" />
+                    <input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} className="h-10 rounded-md border border-input bg-background/50 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all" required />
                   </div>
                   <div className="flex flex-col gap-2">
                     <label className="text-sm font-medium">New Password</label>
-                    <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="h-10 rounded-md border border-input bg-background/50 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all" />
+                    <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="h-10 rounded-md border border-input bg-background/50 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all" required />
                   </div>
-                  <Button onClick={() => toast({ title: "Password updated successfully", variant: "success" })} className="w-fit mt-2">Update Password</Button>
-                </div>
+                  <Button type="submit" isLoading={isSubmittingPassword} className="w-fit mt-2">Update Password</Button>
+                </form>
               </motion.div>
             )}
 
@@ -186,8 +246,8 @@ export default function SettingsPage() {
                 This action cannot be undone. This will permanently delete your account and remove your data from our servers.
               </p>
               <div className="flex justify-end gap-3">
-                <Button variant="outline" onClick={() => setShowDangerModal(false)}>Cancel</Button>
-                <Button variant="destructive" onClick={handleDeleteAccount}>Yes, delete my account</Button>
+                <Button variant="outline" onClick={() => setShowDangerModal(false)} disabled={isDeleting}>Cancel</Button>
+                <Button variant="destructive" onClick={handleDeleteAccount} isLoading={isDeleting}>Yes, delete my account</Button>
               </div>
             </motion.div>
           </div>

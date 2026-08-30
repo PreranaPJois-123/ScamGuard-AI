@@ -78,6 +78,12 @@ async function parseErrorBody(response: Response): Promise<ApiErrorBody> {
     if (data && typeof data.message === "string") {
       return data as ApiErrorBody;
     }
+    if (data && typeof data.detail === "string") {
+      return { error_code: "VALIDATION_ERROR", message: data.detail };
+    }
+    if (data && Array.isArray(data.detail) && data.detail.length > 0 && typeof data.detail[0].msg === "string") {
+      return { error_code: "VALIDATION_ERROR", message: data.detail[0].msg };
+    }
     return { error_code: "UNKNOWN_ERROR", message: "An unexpected error occurred." };
   } catch {
     if (response.status >= 500) {

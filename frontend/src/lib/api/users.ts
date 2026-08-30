@@ -22,9 +22,15 @@ export async function updateAvatar(file: File): Promise<User> {
   });
 }
 
-export async function changePassword(password: string): Promise<void> {
+export async function changePassword(current_password: string, new_password: string): Promise<void> {
   return apiRequest<void>("/users/me/password", {
-    method: "POST",
-    body: { password },
+    method: "PATCH",
+    body: { current_password, new_password },
+  });
+}
+
+export async function deleteAccount(): Promise<void> {
+  return apiRequest<void>("/users/me", {
+    method: "DELETE",
   });
 }

@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { getHistory, submitFeedback } from "@/lib/api/messages";
+import { getHistory, submitFeedback, clearHistory, deleteMessage } from "@/lib/api/messages";
 import { useToast } from "@/hooks/use-toast";
 import { HistoryTable } from "@/components/history/history-table";
 import { Alert } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 import type { AnalysisResult } from "@/types";
 
 export default function HistoryPage() {
@@ -31,13 +32,42 @@ export default function HistoryPage() {
     }
   }, [toast]);
 
+  const handleDelete = useCallback(async (predictionId: string) => {
+    try {
+      await deleteMessage(predictionId);
+      setEntries((prev) => prev.filter((e) => e.id !== predictionId));
+      toast({ title: "Message deleted", variant: "success" });
+    } catch {
+      toast({ title: "Failed to delete message", variant: "error" });
+    }
+  }, [toast]);
+
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Prediction history</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          A record of every message you&apos;ve analyzed, saved to your account.
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Prediction history</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            A record of every message you&apos;ve analyzed, saved to your account.
+          </p>
+        </div>
+        {entries.length > 0 && (
+          <Button 
+            variant="destructive" 
+            size="sm" 
+            onClick={async () => {
+              try {
+                await clearHistory();
+                setEntries([]);
+                toast({ title: "History cleared", variant: "success" });
+              } catch {
+                toast({ title: "Failed to clear history", variant: "error" });
+              }
+            }}
+          >
+            Clear History
+          </Button>
+        )}
       </div>
 
       {error && <Alert variant="error">{error}</Alert>}
@@ -49,7 +79,7 @@ export default function HistoryPage() {
           ))}
         </div>
       ) : (
-        !error && <HistoryTable entries={entries} onFeedback={handleFeedback} />
+        !error && <HistoryTable entries={entries} onFeedback={handleFeedback} onDelete={handleDelete} />
       )}
     </div>
   );

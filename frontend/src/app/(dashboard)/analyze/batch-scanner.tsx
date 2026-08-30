@@ -104,22 +104,15 @@ export const BatchScanner = memo(function BatchScanner() {
       <ScanTabs onScan={handleScan} isScanning={isScanning} />
 
       {isScanning && (
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="relative overflow-hidden bg-card/40 backdrop-blur-md border border-primary/30 text-primary px-6 py-4 rounded-xl shadow-[0_0_20px_rgba(59,130,246,0.15)] flex items-center justify-between"
-        >
-          <div className="flex items-center gap-3 relative z-10">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/20 animate-pulse-glow">
-              <span className="h-3 w-3 rounded-full bg-primary animate-ping" />
-            </div>
-            <span className="font-semibold tracking-wide">AI Engine Analyzing...</span>
+        <div className="flex items-center gap-4 bg-card border border-border px-6 py-4 rounded-xl shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="h-5 w-5 animate-spin rounded-full border-b-2 border-primary" />
+            <span className="font-medium">Analyzing message...</span>
           </div>
-          <span className="text-sm font-medium relative z-10 opacity-80">
+          <span className="text-sm font-medium text-muted-foreground ml-auto">
             Item {currentIndex + 1} of {items.length}
           </span>
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/10 to-transparent -translate-x-full animate-[shimmer_2s_infinite]" />
-        </motion.div>
+        </div>
       )}
 
       {items.length > 0 && (

@@ -46,6 +46,36 @@ def update_current_user(
     db.refresh(current_user)
     return UserRead.model_validate(current_user)
 
+from app_service.schemas.user import UserUpdatePassword
+from app_service.core.security import verify_password, hash_password
+from app_service.core.exceptions import UnauthorizedError
+
+@router.patch("/me/password", status_code=status.HTTP_204_NO_CONTENT)
+@limiter.limit("5/minute")
+def update_password(
+    request: Request,
+    payload: UserUpdatePassword,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if not verify_password(payload.current_password, current_user.password_hash):
+        raise UnauthorizedError("Incorrect current password")
+    current_user.password_hash = hash_password(payload.new_password)
+    db.commit()
+
+@router.delete("/me", status_code=status.HTTP_204_NO_CONTENT)
+@limiter.limit("5/minute")
+def delete_current_user(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    service = UserService(db)
+    # delete the user entirely
+    service.users.delete(current_user)
+    db.commit()
+
+
 
 @router.post("/me/avatar")
 @limiter.limit("10/minute")

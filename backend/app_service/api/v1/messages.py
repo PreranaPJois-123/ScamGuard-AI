@@ -73,3 +73,25 @@ def submit_feedback(
 ) -> AnalysisResult:
     service = MessageService(db)
     return service.record_feedback(current_user.id, prediction_id, payload.is_accurate)
+
+@router.delete("/history", status_code=status.HTTP_204_NO_CONTENT)
+@limiter.limit("5/minute")
+def clear_history(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> None:
+    service = MessageService(db)
+    service.clear_history(current_user.id)
+
+@router.delete("/{prediction_id}", status_code=status.HTTP_204_NO_CONTENT)
+@limiter.limit("30/minute")
+def delete_prediction(
+    request: Request,
+    prediction_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> None:
+    service = MessageService(db)
+    service.delete_prediction(current_user.id, prediction_id)
+

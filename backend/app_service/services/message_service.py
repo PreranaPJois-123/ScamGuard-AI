@@ -77,6 +77,18 @@ class MessageService:
         prediction = self.predictions.save(prediction)
         return self._to_result(prediction, prediction.message.text)
 
+    def clear_history(self, user_id: uuid.UUID) -> None:
+        predictions = self.predictions.list_for_user(user_id, skip=0, limit=1000)
+        for p in predictions:
+            # Delete message will cascade
+            self.messages.delete(p.message)
+
+    def delete_prediction(self, user_id: uuid.UUID, prediction_id: uuid.UUID) -> None:
+        prediction = self.predictions.get_for_user(prediction_id, user_id)
+        if prediction is None:
+            raise NotFoundError("Prediction not found")
+        self.messages.delete(prediction.message)
+
     @staticmethod
     def _to_result(prediction: Prediction, text: str) -> AnalysisResult:
         return AnalysisResult(

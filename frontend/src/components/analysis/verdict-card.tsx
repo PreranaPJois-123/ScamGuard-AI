@@ -60,22 +60,20 @@ export function VerdictCard({ result, onFeedback }: VerdictCardProps) {
       </motion.div>
 
       <motion.div variants={itemVariants}>
-        <Card className="overflow-hidden border-0 shadow-2xl bg-card/80 backdrop-blur-xl ring-1 ring-white/10 dark:ring-white/5 relative z-0">
+        <Card className="overflow-hidden border border-border bg-card shadow-sm">
           <div
             className={
               isSafe
-                ? "h-2 w-full bg-gradient-to-r from-green-400 to-emerald-500"
+                ? "h-1 w-full bg-green-500"
                 : result.threat_level === "critical"
-                  ? "h-2 w-full bg-gradient-to-r from-red-500 to-rose-600"
+                  ? "h-1 w-full bg-red-600"
                   : result.risk_level === "high"
-                    ? "h-2 w-full bg-gradient-to-r from-orange-400 to-red-500"
-                    : "h-2 w-full bg-gradient-to-r from-yellow-400 to-orange-500"
+                    ? "h-1 w-full bg-orange-500"
+                    : "h-1 w-full bg-yellow-500"
             }
           />
 
-          <CardContent className="flex flex-col gap-8 p-8 relative">
-            <div className="absolute top-0 right-0 p-32 bg-primary/5 rounded-full blur-3xl -z-10 pointer-events-none" />
-            <div className="absolute bottom-0 left-0 p-32 bg-primary/5 rounded-full blur-3xl -z-10 pointer-events-none" />
+          <CardContent className="flex flex-col gap-8 p-8">
 
             {/* Header: Verdict + Confidence Gauge + Print */}
             <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between z-10">
@@ -144,7 +142,7 @@ export function VerdictCard({ result, onFeedback }: VerdictCardProps) {
 
             {/* Suspicious Keywords */}
             {result.top_contributing_tokens.length > 0 && (
-              <motion.div variants={itemVariants} className="rounded-xl bg-background/40 backdrop-blur-md p-5 border border-white/5 ring-1 ring-inset ring-white/10 shadow-inner z-10">
+              <motion.div variants={itemVariants} className="rounded-xl bg-muted/30 p-5 border border-border/50 shadow-sm z-10">
                 <p className="mb-3 text-sm font-semibold text-foreground flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-primary" />
                   Suspicious Keywords Detected
@@ -171,14 +169,14 @@ export function VerdictCard({ result, onFeedback }: VerdictCardProps) {
             <motion.div variants={itemVariants} className="flex items-center justify-between pt-6 border-t border-border/50 z-10">
               <p className="text-xs font-medium text-muted-foreground flex items-center gap-2">
                 <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                  <span className="absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
                 </span>
                 Scored by {result.model_name} (v{result.model_version})
               </p>
 
               {onFeedback && (
-                <div className="flex items-center gap-3 print:hidden bg-background/50 backdrop-blur-md p-1.5 rounded-full border border-white/5">
+                <div className="flex items-center gap-3 print:hidden bg-muted/30 p-1.5 rounded-full border border-border/50">
                   <span className="text-xs font-medium text-muted-foreground px-2">Was this accurate?</span>
                   <Button
                     variant={result.user_feedback === true ? "primary" : "ghost"}
@@ -210,7 +208,7 @@ export function VerdictCard({ result, onFeedback }: VerdictCardProps) {
 
 function Metric({ label, value, icon: Icon }: { label: string; value: string; icon: any }) {
   return (
-    <div className="flex flex-col gap-2 p-4 rounded-xl bg-background/30 backdrop-blur-sm border border-white/5 shadow-sm">
+    <div className="flex flex-col gap-2 p-4 rounded-xl bg-muted/30 border border-border/50 shadow-sm">
       <dt className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground flex items-center gap-1.5">
         <Icon className="w-3.5 h-3.5" />
         {label}

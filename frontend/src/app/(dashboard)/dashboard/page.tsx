@@ -41,7 +41,7 @@ export default function DashboardPage() {
     <div className="flex flex-col gap-8">
       <div className="flex flex-col gap-1">
         <h1 className="text-2xl font-semibold tracking-tight">
-          Welcome back{user ? `, ${user.email.split("@")[0]}` : ""}
+          Welcome back{user ? `, ${user.full_name || user.email.split("@")[0]}` : ""}
         </h1>
         <p className="text-sm text-muted-foreground">Here&apos;s an overview of your scam-detection activity.</p>
       </div>
