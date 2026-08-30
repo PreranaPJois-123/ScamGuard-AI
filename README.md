@@ -1,6 +1,6 @@
 ﻿# ScamGuard — AI-Powered Online Scam & Fraud Detection System
 
-ScamGuard (VisionGuard AI) is a full-stack, production-grade cybersecurity intelligence platform designed to detect phishing attacks, lottery fraud, UPI/banking scams, and social engineering in real time using Machine Learning and Explainable AI (XAI).
+ScamGuard is a full-stack, production-grade cybersecurity intelligence platform designed to detect phishing attacks, lottery fraud, UPI/banking scams, and social engineering in real time using Machine Learning and Explainable AI (XAI).
 
 ---
 
@@ -15,13 +15,21 @@ ScamGuard (VisionGuard AI) is a full-stack, production-grade cybersecurity intel
 
 ---
 
-## 🎯 Key Features
+## 🎯 Key Capabilities & Production Features
 
-- **Real-Time Detection**: Classifies messages as legitimate or scam with high-confidence probability scores.
-- **Explainable AI (XAI)**: Identifies top contributing tokens/keywords, threat scores, risk dimensions (urgency, financial, credential theft, etc.), and suggested next steps.
-- **Multi-Channel Scanners**: Supports raw text, URLs, emails (.eml/text), images (OCR), PDFs, and QR codes.
-- **Enterprise Authentication**: Secure user registration, login, JWT access/refresh token rotation, and Role-Based Access Control (RBAC).
-- **Scan History & Analytics**: View previous scans, provide accuracy feedback, and inspect threat summaries.
+- **Real-Time Detection**: Classifies messages as legitimate or scam with high-confidence probability scores using scikit-learn models (Naive Bayes & TF-IDF).
+- **Explainable AI (XAI)**: Identifies top contributing tokens/keywords, threat scores, risk dimensions (urgency, financial risk, credential theft, etc.), and suggested next steps.
+- **Multi-Channel Scanners**: Supports raw text, URLs, emails (.eml/text), screenshot/image OCR, document PDFs, and QR codes.
+- **Live Camera / Optical Scanner**: In-browser device camera viewfinder for real-time capture of printed phishing letters, SMS on secondary phones, or physical QR codes.
+- **Enterprise Authentication**: Secure user registration, login, JWT access/refresh token rotation, bcrypt password hashing, and Role-Based Access Control (RBAC).
+- **Comprehensive Settings Suite**:
+  - **Profile Management**: Update display name, view role, and switch themes.
+  - **Account Security**: Change password with live strength validation (8+ chars, uppercase, digit) and show/hide toggles.
+  - **Detection Preferences**: Auto-save toggles, default input channels, and visual warning alerts.
+  - **Privacy & Data Controls**: One-click JSON data export (GDPR-compliant) and irreversible history purging.
+  - **Danger Zone**: Secure account deletion requiring strict typed confirmation (DELETE).
+- **Scan History & Analytics**: Filterable history, CSV report generation, accuracy feedback loops, and live statistical distribution charts.
+- **System Administration**: Live cluster telemetry from PostgreSQL, verified user directory, and threat volume tracking.
 
 ---
 
@@ -137,8 +145,8 @@ scamguard-fullstack/
 │   ├── requirements.txt        # App service dependencies
 │   └── requirements-ml.txt     # ML service dependencies
 ├── frontend/                   # Next.js 14 React frontend with Tailwind CSS
-│   ├── src/app/                # App router: login, register, dashboard, analyze
-│   ├── src/components/         # Reusable UI widgets, badges, verdict cards
+│   ├── src/app/                # App router: login, register, dashboard, analyze, settings
+│   ├── src/components/         # Reusable UI widgets, badges, verdict cards, camera scanner
 │   └── src/lib/api/            # Typed API client with auto token refresh
 ├── infra/
 │   └── docker/                 # Dockerfiles for each microservice
@@ -153,3 +161,4 @@ scamguard-fullstack/
 - JWT access tokens with short expiry (15m) + secure refresh token rotation (7d).
 - Strict Content Security Policy (CSP) & CORS configuration.
 - Rate-limiting enabled via SlowAPI on sensitive auth & prediction routes.
+- Privacy-first in-memory vectorization: message content is never sold or used for model retraining without consent.
