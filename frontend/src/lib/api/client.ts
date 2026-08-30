@@ -27,7 +27,7 @@ interface RequestOptions {
 // URLs by next.config.js's rewrites() -- see that file for why. The
 // browser never makes a cross-origin request to either backend.
 const APP_API_URL = "/backend-api/api/v1";
-const API_TIMEOUT_MS = 60000;
+const API_TIMEOUT_MS = 90000;
 
 let refreshPromise: Promise<TokenPair | null> | null = null;
 
@@ -100,7 +100,7 @@ function mapFetchError(error: unknown): never {
   if (error instanceof DOMException && error.name === "AbortError") {
     throw new ApiError(0, {
       error_code: "REQUEST_TIMEOUT",
-      message: "The request timed out. Please try again or check whether the backend is running.",
+      message: "The backend server is waking up from standby or taking longer than usual. Please wait a moment and try again.",
     });
   }
 

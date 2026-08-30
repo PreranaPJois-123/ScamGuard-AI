@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState, useEffect, type FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth/auth-context";
@@ -21,6 +21,12 @@ export function LoginForm() {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isWakingServer, setIsWakingServer] = useState(false);
+
+  // Proactively wake up backend from standby on page load
+  useEffect(() => {
+    fetch("/backend-api/api/v1/health").catch(() => {});
+  }, []);
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -37,6 +43,12 @@ export function LoginForm() {
     }
     setFieldErrors({});
     setIsSubmitting(true);
+    setIsWakingServer(false);
+
+    // Show friendly server wake-up notice if request takes > 2.5s
+    const wakeTimer = setTimeout(() => {
+      setIsWakingServer(true);
+    }, 2500);
 
     try {
       await login(result.data);
@@ -48,6 +60,8 @@ export function LoginForm() {
         setFormError("Something went wrong. Please try again.");
       }
     } finally {
+      clearTimeout(wakeTimer);
+      setIsWakingServer(false);
       setIsSubmitting(false);
     }
   }
@@ -77,8 +91,14 @@ export function LoginForm() {
       />
 
       <Button type="submit" isLoading={isSubmitting} className="mt-1 w-full" size="lg">
-        Sign in
+        {isWakingServer ? "Connecting (waking cloud server)..." : "Sign in"}
       </Button>
+
+      {isWakingServer && (
+        <p className="text-center text-xs text-amber-500 animate-pulse">
+          Free-tier cloud backend is booting from sleep. Please wait a moment...
+        </p>
+      )}
 
       <p className="text-center text-sm text-muted-foreground">
         Don&apos;t have an account?{" "}

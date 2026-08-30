@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState, useEffect, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth/auth-context";
@@ -20,6 +20,12 @@ export function RegisterForm() {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isWakingServer, setIsWakingServer] = useState(false);
+
+  // Proactively wake up backend from standby on page load
+  useEffect(() => {
+    fetch("/backend-api/api/v1/health").catch(() => {});
+  }, []);
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -36,6 +42,12 @@ export function RegisterForm() {
     }
     setFieldErrors({});
     setIsSubmitting(true);
+    setIsWakingServer(false);
+
+    // Show friendly server wake-up notice if request takes > 2.5s
+    const wakeTimer = setTimeout(() => {
+      setIsWakingServer(true);
+    }, 2500);
 
     try {
       await register({ email: result.data.email, password: result.data.password });
@@ -51,6 +63,8 @@ export function RegisterForm() {
         setFormError("Something went wrong. Please try again.");
       }
     } finally {
+      clearTimeout(wakeTimer);
+      setIsWakingServer(false);
       setIsSubmitting(false);
     }
   }
@@ -76,8 +90,8 @@ export function RegisterForm() {
         value={password}
         onChange={(e) => setPassword(e.target.value)}
         error={fieldErrors.password}
-        hint="At least 8 characters, with one digit and one uppercase letter."
-        placeholder="••••••••"
+        placeholder="At least 8 characters"
+        hint="Must contain at least 8 characters, one number, and one uppercase letter."
       />
 
       <Input
@@ -87,12 +101,18 @@ export function RegisterForm() {
         value={confirmPassword}
         onChange={(e) => setConfirmPassword(e.target.value)}
         error={fieldErrors.confirmPassword}
-        placeholder="••••••••"
+        placeholder="Repeat password"
       />
 
       <Button type="submit" isLoading={isSubmitting} className="mt-1 w-full" size="lg">
-        Create account
+        {isWakingServer ? "Creating account (waking cloud server)..." : "Create account"}
       </Button>
+
+      {isWakingServer && (
+        <p className="text-center text-xs text-amber-500 animate-pulse">
+          Free-tier cloud backend is booting from sleep. Please wait a moment...
+        </p>
+      )}
 
       <p className="text-center text-sm text-muted-foreground">
         Already have an account?{" "}
