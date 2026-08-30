@@ -13,8 +13,8 @@
       },
       "is_production": true,
       "trained_at": "2026-07-25T13:13:12.055714+00:00",
-      "artifact_path": "artifacts\\naive_bayes\\v1\\model.joblib",
-      "vectorizer_path": "artifacts\\naive_bayes\\v1\\vectorizer.joblib"
+      "artifact_path": "artifacts/naive_bayes/v1/model.joblib",
+      "vectorizer_path": "artifacts/naive_bayes/v1/vectorizer.joblib"
     }
   ]
 }
