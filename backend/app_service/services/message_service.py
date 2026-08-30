@@ -24,6 +24,10 @@ class MessageService:
         self.predictions = PredictionRepository(db)
 
     def analyze(self, user_id: uuid.UUID | None, text: str, input_type: str = "TEXT", metadata: dict | None = None) -> AnalysisResult:
+        # Clamp text to 4000 characters to strictly respect database and ML schema constraints
+        if text and len(text) > 4000:
+            text = text[:4000]
+
         try:
             response = httpx.post(
                 f"{settings.ML_SERVICE_URL}/api/v1/internal/predict",

@@ -11,11 +11,13 @@ class PredictRequest(BaseModel):
     input_type: str = "TEXT"
     metadata: dict | None = None
 
-    @field_validator("text")
+    @field_validator("text", mode="before")
     @classmethod
     def text_must_not_be_blank(cls, value: str) -> str:
-        if not value.strip():
+        if not isinstance(value, str) or not value.strip():
             raise ValueError("text must not be blank")
+        if len(value) > 4500:
+            return value[:4500]
         return value
 
 

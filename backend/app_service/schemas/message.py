@@ -1,12 +1,21 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class AnalyzeRequest(BaseModel):
     text: str = Field(..., min_length=1, max_length=5000)
     input_type: str = "TEXT"
+
+    @field_validator("text", mode="before")
+    @classmethod
+    def truncate_text(cls, value: str) -> str:
+        if not isinstance(value, str) or not value.strip():
+            raise ValueError("text must not be blank")
+        if len(value) > 4500:
+            return value[:4500]
+        return value
 
 
 class TokenContribution(BaseModel):
