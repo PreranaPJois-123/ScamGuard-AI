@@ -35,14 +35,14 @@ ScamGuard is a full-stack, production-grade cybersecurity intelligence platform 
 
 ## 🏗️ System Architecture
 
-`mermaid
+```mermaid
 graph TD
     Client[Web Browser] -->|HTTPS| Frontend[Next.js 14 Frontend - Vercel / Port 3000]
     Frontend -->|Same-Origin /backend-api Rewrite| AppService[FastAPI App Service - Port 8000]
     AppService -->|SQLAlchemy / Alembic| DB[(PostgreSQL / SQLite)]
     AppService -->|HTTP JSON /internal/predict| MLService[FastAPI ML Inference Service - Port 8002]
     MLService -->|Joblib Serialization| ModelRegistry[(Trained ML Artifacts - Naive Bayes / TF-IDF)]
-`
+```
 
 ---
 
@@ -59,9 +59,9 @@ graph TD
 
 From the project root directory, run:
 
-`ash
+```bash
 docker compose up --build
-`
+```
 
 This starts all services together:
 - **Web UI**: [http://localhost:3000](http://localhost:3000) (or via Nginx on port 80)
@@ -77,7 +77,7 @@ This starts all services together:
 Open **three terminal windows** in your IDE/command prompt:
 
 #### Terminal 1 — Backend App Service
-`ash
+```bash
 cd backend
 python -m venv venv
 # Windows:
@@ -88,10 +88,10 @@ venv\Scripts\activate
 pip install -r requirements.txt
 # Starts on http://localhost:8000 (uses local SQLite database automatically if PostgreSQL is not set)
 uvicorn app_service.main:app --port 8000 --reload
-`
+```
 
 #### Terminal 2 — ML Inference Service
-`ash
+```bash
 cd backend
 # Windows:
 venv\Scripts\activate
@@ -101,14 +101,14 @@ venv\Scripts\activate
 pip install -r requirements-ml.txt
 # Starts on http://localhost:8002 (uses pre-trained models bundled in backend/artifacts)
 uvicorn ml_service.main:app --port 8002 --reload
-`
+```
 
 #### Terminal 3 — Frontend UI
-`ash
+```bash
 cd frontend
 npm install
 npm run dev
-`
+```
 Open **[http://localhost:3000](http://localhost:3000)** in your browser.
 
 ---
@@ -118,12 +118,12 @@ Open **[http://localhost:3000](http://localhost:3000)** in your browser.
 The project includes an automated test suite with **158 unit and integration tests**.
 
 Run all tests:
-`ash
+```bash
 cd backend
 python -m pytest tests -v
 python -m pytest ml_service/tests -v
 python -m pytest ml_common/tests ml_training/tests -v
-`
+```
 
 ---
 
