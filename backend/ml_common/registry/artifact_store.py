@@ -36,7 +36,18 @@ class LocalArtifactStore:
     """Filesystem-backed artifact store rooted at a configurable directory."""
 
     def __init__(self, root_dir: str):
-        self._root = Path(root_dir)
+        p = Path(root_dir)
+        if not p.exists() or not (p / "registry_index.json").exists():
+            candidates = [
+                Path("backend") / root_dir,
+                Path(__file__).resolve().parent.parent.parent / "artifacts",
+                Path(__file__).resolve().parent.parent.parent.parent / "backend" / "artifacts",
+            ]
+            for cand in candidates:
+                if cand.exists() and (cand / "registry_index.json").exists():
+                    p = cand
+                    break
+        self._root = p
         self._root.mkdir(parents=True, exist_ok=True)
 
     def save(self, source_path: str, destination_key: str) -> str:

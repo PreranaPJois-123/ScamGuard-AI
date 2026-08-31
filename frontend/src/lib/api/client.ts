@@ -27,7 +27,7 @@ interface RequestOptions {
 // URLs by next.config.js's rewrites() -- see that file for why. The
 // browser never makes a cross-origin request to either backend.
 const APP_API_URL = "/backend-api/api/v1";
-const API_TIMEOUT_MS = 90000;
+const API_TIMEOUT_MS = 30000;
 
 let refreshPromise: Promise<TokenPair | null> | null = null;
 

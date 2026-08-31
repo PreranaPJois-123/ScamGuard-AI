@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, type FormEvent } from "react";
+import { useState, useEffect, useRef, type FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth/auth-context";
@@ -10,6 +10,7 @@ import { getSafeRedirectPath } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
+import { RefreshCw } from "lucide-react";
 
 export function LoginForm() {
   const { login } = useAuth();
@@ -22,11 +23,36 @@ export function LoginForm() {
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isWakingServer, setIsWakingServer] = useState(false);
+  const [secondsElapsed, setSecondsElapsed] = useState(0);
 
-  // Proactively wake up backend from standby on page load
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Proactively wake up backend from standby on page mount
   useEffect(() => {
     fetch("/backend-api/api/v1/health").catch(() => {});
   }, []);
+
+  // Track elapsed time during submission
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isSubmitting) {
+      interval = setInterval(() => {
+        setSecondsElapsed((prev) => prev + 1);
+      }, 1000);
+    } else {
+      setSecondsElapsed(0);
+    }
+    return () => clearInterval(interval);
+  }, [isSubmitting]);
+
+  const handleCancel = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    setIsSubmitting(false);
+    setIsWakingServer(false);
+    setFormError("Sign-in cancelled. You can click 'Sign in' to try again.");
+  };
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -44,8 +70,9 @@ export function LoginForm() {
     setFieldErrors({});
     setIsSubmitting(true);
     setIsWakingServer(false);
+    abortControllerRef.current = new AbortController();
 
-    // Show friendly server wake-up notice if request takes > 2.5s
+    // Show server wake-up notice if request takes > 2.5s
     const wakeTimer = setTimeout(() => {
       setIsWakingServer(true);
     }, 2500);
@@ -56,8 +83,10 @@ export function LoginForm() {
     } catch (error) {
       if (error instanceof ApiError) {
         setFormError(error.message);
+      } else if (error instanceof Error && error.name === "AbortError") {
+        setFormError("Request was cancelled.");
       } else {
-        setFormError("Something went wrong. Please try again.");
+        setFormError("Connection to backend server timed out. The server was booting from sleep — please click 'Sign in' again now.");
       }
     } finally {
       clearTimeout(wakeTimer);
@@ -78,6 +107,7 @@ export function LoginForm() {
         onChange={(e) => setEmail(e.target.value)}
         error={fieldErrors.email}
         placeholder="you@example.com"
+        disabled={isSubmitting}
       />
 
       <Input
@@ -88,16 +118,41 @@ export function LoginForm() {
         onChange={(e) => setPassword(e.target.value)}
         error={fieldErrors.password}
         placeholder="••••••••"
+        disabled={isSubmitting}
       />
 
-      <Button type="submit" isLoading={isSubmitting} className="mt-1 w-full" size="lg">
-        {isWakingServer ? "Connecting (waking cloud server)..." : "Sign in"}
-      </Button>
+      <div className="flex flex-col gap-2 mt-1">
+        <Button type="submit" isLoading={isSubmitting} className="w-full" size="lg">
+          {isWakingServer
+            ? `Connecting to server (${secondsElapsed}s)...`
+            : isSubmitting
+              ? "Signing in..."
+              : "Sign in"}
+        </Button>
+
+        {isSubmitting && secondsElapsed >= 8 && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={handleCancel}
+            className="text-xs text-muted-foreground hover:text-foreground"
+          >
+            <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
+            Taking longer than expected? Click here to cancel & retry
+          </Button>
+        )}
+      </div>
 
       {isWakingServer && (
-        <p className="text-center text-xs text-amber-500 animate-pulse">
-          Free-tier cloud backend is booting from sleep. Please wait a moment...
-        </p>
+        <div className="rounded-lg bg-amber-500/10 border border-amber-500/20 p-3 text-center">
+          <p className="text-xs font-medium text-amber-500">
+            Cloud backend is waking from standby ({secondsElapsed}s elapsed).
+          </p>
+          <p className="mt-0.5 text-[11px] text-muted-foreground">
+            Free-tier instances spin down when idle. Your session will load as soon as the service connects.
+          </p>
+        </div>
       )}
 
       <p className="text-center text-sm text-muted-foreground">

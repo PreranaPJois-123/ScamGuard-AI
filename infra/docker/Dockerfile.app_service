@@ -31,6 +31,9 @@ WORKDIR /app
 
 COPY --from=builder /root/.local /home/appuser/.local
 COPY app_service ./app_service
+COPY ml_common ./ml_common
+COPY ml_service ./ml_service
+COPY artifacts ./artifacts
 COPY alembic ./alembic
 COPY alembic.ini .
 

@@ -7,6 +7,10 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 _ENV_FILE = Path(__file__).resolve().parent.parent.parent / "ml_service" / ".env"
 
 
+_BACKEND_DIR = Path(__file__).resolve().parent.parent.parent
+_DEFAULT_ARTIFACTS = str(_BACKEND_DIR / "artifacts") if (_BACKEND_DIR / "artifacts").exists() else "artifacts"
+
+
 class Settings(BaseSettings):
     """Configuration for the ML Inference Service.
 
@@ -28,7 +32,7 @@ class Settings(BaseSettings):
     DEBUG: bool = True
     API_V1_PREFIX: str = "/api/v1"
 
-    ARTIFACTS_DIR: str = "artifacts"
+    ARTIFACTS_DIR: str = _DEFAULT_ARTIFACTS
     PRODUCTION_MODEL_NAME: str = "naive_bayes"
 
     RATE_LIMIT_DEFAULT: str = "200/minute"

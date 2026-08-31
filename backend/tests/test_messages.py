@@ -116,6 +116,9 @@ def test_analyze_returns_503_when_ml_service_unavailable(client):
     with patch(
         "app_service.services.message_service.httpx.post",
         side_effect=httpx_module.ConnectError("connection refused"),
+    ), patch(
+        "app_service.services.message_service.get_in_process_prediction_service",
+        side_effect=RuntimeError("in-process model unavailable"),
     ):
         response = client.post(
             "/api/v1/messages/analyze",

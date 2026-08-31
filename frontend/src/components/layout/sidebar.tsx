@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -26,6 +27,32 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
 
+  // Automatically close sidebar when navigating to a new route on mobile
+  useEffect(() => {
+    onClose();
+  }, [pathname, onClose]);
+
+  // Handle Escape key and body scroll lock when mobile sidebar is open
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      window.addEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = "";
+    };
+  }, [isOpen, onClose]);
+
   const navItems = [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/analyze", label: "Analyze Message", icon: ScanSearch },
@@ -37,26 +64,26 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
   return (
     <>
+      {/* Mobile Backdrop */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-40 bg-black/50 md:hidden"
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden"
             onClick={onClose}
             aria-hidden="true"
           />
         )}
       </AnimatePresence>
 
-      <motion.aside
-        initial={{ x: -300, opacity: 0 }}
-        animate={{ x: 0, opacity: 1 }}
-        transition={{ duration: 0.4, ease: "easeOut" }}
+      {/* Sidebar Navigation */}
+      <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-border bg-card/70 backdrop-blur-xl transition-transform md:sticky md:top-0 md:h-screen md:translate-x-0",
-          isOpen ? "translate-x-0" : "-translate-x-full",
+          "fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-border bg-card/95 backdrop-blur-xl shadow-2xl transition-transform duration-300 ease-in-out md:sticky md:top-0 md:h-screen md:translate-x-0 md:bg-card/70 md:shadow-none",
+          isOpen ? "translate-x-0" : "-translate-x-full pointer-events-none md:pointer-events-auto"
         )}
       >
         <div className="flex h-16 items-center justify-between px-6 border-b border-border/50">
@@ -74,7 +101,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           </Button>
         </div>
 
-        <nav className="flex-1 space-y-1.5 px-4 py-6">
+        <nav className="flex-1 space-y-1.5 px-4 py-6 overflow-y-auto">
           {navItems.map(({ href, label, icon: Icon }) => {
             const isActive = pathname === href || pathname.startsWith(`${href}/`);
             return (
@@ -103,13 +130,16 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           <Button
             variant="ghost"
             className="w-full justify-start gap-3 text-muted-foreground hover:text-destructive"
-            onClick={() => void logout()}
+            onClick={() => {
+              onClose();
+              void logout();
+            }}
           >
             <LogOut className="h-4 w-4" aria-hidden="true" />
             Sign out
           </Button>
         </div>
-      </motion.aside>
+      </aside>
     </>
   );
 }

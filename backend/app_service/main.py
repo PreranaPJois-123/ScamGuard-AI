@@ -40,11 +40,18 @@ except ImportError:
 async def lifespan(app: FastAPI):
     if HAS_FASTAPI_CACHE:
         FastAPICache.init(InMemoryBackend())
-    try:
-        with engine.connect() as connection:
-            connection.execute(text("SELECT 1"))
-    except OperationalError as exc:
-        raise RuntimeError("Database is unavailable. Ensure the database is reachable and DATABASE_URL is correct.") from exc
+    db_connected = False
+    for attempt in range(5):
+        try:
+            with engine.connect() as connection:
+                connection.execute(text("SELECT 1"))
+            db_connected = True
+            break
+        except OperationalError:
+            import time
+            time.sleep(1.5)
+    if not db_connected:
+        raise RuntimeError("Database is unavailable. Ensure the database is reachable and DATABASE_URL is correct.")
     Base.metadata.create_all(bind=engine)
     yield
 

@@ -17,6 +17,41 @@ class MlServiceUnavailableError(ValidationAppError):
     error_code = "MODEL_UNAVAILABLE"
 
 
+import threading
+import logging
+
+logger = logging.getLogger("app_service.ml_client")
+
+_in_process_svc = None
+_in_process_lock = threading.Lock()
+
+
+def get_in_process_prediction_service():
+    """Lazily instantiate the genuine in-process ML inference pipeline.
+    Ensures zero downtime and complete functionality even if the separate
+    ML microservice container is sleeping or temporarily unreachable.
+    """
+    global _in_process_svc
+    if _in_process_svc is None:
+        with _in_process_lock:
+            if _in_process_svc is None:
+                from ml_service.api.deps import build_inference_engine
+                from ml_service.services.prediction_service import PredictionService
+                from ml_service.inference.confidence import ConfidenceCalculator
+                from ml_service.inference.threat_scorer import ThreatScorer
+                from ml_service.inference.explainer import PredictionExplainer
+
+                engine = build_inference_engine()
+                engine.load()
+                _in_process_svc = PredictionService(
+                    engine=engine,
+                    confidence_calculator=ConfidenceCalculator(),
+                    threat_scorer=ThreatScorer(),
+                    explainer=PredictionExplainer(),
+                )
+    return _in_process_svc
+
+
 class MessageService:
     def __init__(self, db: Session):
         self.db = db
@@ -30,31 +65,70 @@ class MessageService:
 
         data = None
         last_exc = None
+        # 1. First attempt calling the dedicated ML inference microservice with cold-start retry
         for attempt in range(2):
             try:
                 response = httpx.post(
                     f"{settings.ML_SERVICE_URL}/api/v1/internal/predict",
                     json={"text": text, "input_type": input_type, "metadata": metadata},
-                    timeout=50.0,
+                    timeout=25.0,
                 )
                 response.raise_for_status()
                 data = response.json()
+                break
+            except httpx.HTTPStatusError as exc:
+                last_exc = exc
+                if exc.response.status_code in (502, 503, 504) and attempt == 0:
+                    import time
+                    time.sleep(2.0)
+                    continue
                 break
             except (httpx.ConnectTimeout, httpx.ReadTimeout, httpx.ConnectError) as exc:
                 last_exc = exc
                 if attempt == 0:
                     import time
-                    time.sleep(2.5)
+                    time.sleep(2.0)
                     continue
                 break
             except (httpx.HTTPError, ValueError) as exc:
                 last_exc = exc
                 break
 
+        # 2. If the remote service is unavailable (e.g. cold-starting or offline),
+        # execute genuine in-process ML inference with zero user-facing disruption
         if data is None:
-            raise MlServiceUnavailableError(
-                "The scam-detection model is temporarily unavailable. Please try again shortly."
-            ) from last_exc
+            try:
+                svc = get_in_process_prediction_service()
+                from ml_service.services.prediction_service import PredictionRequest
+                res = svc.predict(PredictionRequest(text=text, input_type=input_type, metadata=metadata))
+                data = {
+                    "verdict": res.verdict,
+                    "scam_probability": res.scam_probability,
+                    "risk_level": res.risk_level,
+                    "scam_category": res.scam_category,
+                    "confidence_score": res.confidence_score,
+                    "threat_score": res.threat_score,
+                    "top_contributing_tokens": [
+                        {"token": t.token, "weight": t.weight}
+                        for t in res.top_contributing_tokens
+                    ],
+                    "model_name": res.model_name,
+                    "model_version": res.model_version,
+                    "latency_ms": res.latency_ms,
+                    "ai_explanation": res.ai_explanation,
+                    "executive_summary": res.executive_summary,
+                    "technical_explanation": res.technical_explanation,
+                    "threat_level": res.threat_level,
+                    "risk_breakdown": res.risk_breakdown,
+                    "recommended_actions": res.recommended_actions,
+                    "highlighted_entities": res.highlighted_entities,
+                    "similar_patterns": res.similar_patterns,
+                }
+            except Exception as in_proc_exc:
+                logger.error("In-process ML inference fallback failed: %s", in_proc_exc)
+                raise MlServiceUnavailableError(
+                    "The scam-detection model is temporarily unavailable. Please try again shortly."
+                ) from last_exc
 
         message = self.messages.create(user_id, text)
         prediction = Prediction(
