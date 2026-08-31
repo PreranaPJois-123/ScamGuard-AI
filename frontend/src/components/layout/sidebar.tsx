@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -27,9 +27,13 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
 
-  // Automatically close sidebar when navigating to a new route on mobile
+  // Only close sidebar when actually navigating to a DIFFERENT route
+  const prevPathRef = useRef(pathname);
   useEffect(() => {
-    onClose();
+    if (prevPathRef.current !== pathname) {
+      prevPathRef.current = pathname;
+      onClose();
+    }
   }, [pathname, onClose]);
 
   // Handle Escape key and body scroll lock when mobile sidebar is open
@@ -82,7 +86,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       {/* Sidebar Navigation */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-border bg-card/95 backdrop-blur-xl shadow-2xl transition-transform duration-300 ease-in-out md:sticky md:top-0 md:h-screen md:translate-x-0 md:bg-card/70 md:shadow-none",
+          "fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-border bg-card shadow-2xl transition-transform duration-300 ease-in-out md:sticky md:top-0 md:h-screen md:translate-x-0 md:bg-card/70 md:shadow-none",
           isOpen ? "translate-x-0" : "-translate-x-full pointer-events-none md:pointer-events-auto"
         )}
       >
