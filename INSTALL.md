@@ -11,8 +11,8 @@ ScamGuard is designed to be completely portable. The entire environment is conta
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/your-username/scamguard-fullstack.git
-   cd scamguard-fullstack
+   git clone https://github.com/PreranaPJois-123/ScamGuard-AI.git
+   cd ScamGuard-AI
    ```
 
 2. Start the application:

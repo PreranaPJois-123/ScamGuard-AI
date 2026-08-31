@@ -129,8 +129,8 @@ python -m pytest ml_common/tests ml_training/tests -v
 
 ## 📁 Repository Structure
 
-`
-scamguard-fullstack/
+```
+ScamGuard-AI/
 ├── docker-compose.yml          # Root one-command multi-container setup
 ├── backend/
 │   ├── app_service/            # Core business logic, auth, REST API routes
@@ -151,7 +151,7 @@ scamguard-fullstack/
 ├── infra/
 │   └── docker/                 # Dockerfiles for each microservice
 └── docs/                       # Architecture documentation and specs
-`
+```
 
 ---
 
@@ -167,6 +167,6 @@ scamguard-fullstack/
 
 ## 👤 Author & Project Maintainer
 
-- **Project Lead & Author**: **Prerna P Joyce**
+- **Project Lead & Author**: **Prerna P Joyce** ([@PreranaPJois-123](https://github.com/PreranaPJois-123))
+- **Repository**: [https://github.com/PreranaPJois-123/ScamGuard-AI](https://github.com/PreranaPJois-123/ScamGuard-AI)
 - **Project**: ScamGuard AI — AI-Powered Online Scam & Fraud Detection System
-
