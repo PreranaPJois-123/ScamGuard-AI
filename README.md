@@ -1,4 +1,4 @@
-﻿# ScamGuard — AI-Powered Online Scam & Fraud Detection System
+# ScamGuard — AI-Powered Online Scam & Fraud Detection System
 
 ScamGuard is a full-stack, production-grade cybersecurity intelligence platform designed to detect phishing attacks, lottery fraud, UPI/banking scams, and social engineering in real time using Machine Learning and Explainable AI (XAI).
 
@@ -162,3 +162,11 @@ scamguard-fullstack/
 - Strict Content Security Policy (CSP) & CORS configuration.
 - Rate-limiting enabled via SlowAPI on sensitive auth & prediction routes.
 - Privacy-first in-memory vectorization: message content is never sold or used for model retraining without consent.
+
+---
+
+## 👤 Author & Project Maintainer
+
+- **Project Lead & Author**: **Prerna P Joyce**
+- **Project**: ScamGuard AI — AI-Powered Online Scam & Fraud Detection System
+
