@@ -46,7 +46,10 @@ const nextConfig = {
     // Runs in the Next.js server (Node process, or Vercel's serverless
     // functions), never in the browser -- so from the browser's point of
     // view, every request stays same-origin.
-    const appServiceUrl = process.env.APP_SERVICE_URL ?? "http://localhost:8000";
+    let appServiceUrl = process.env.APP_SERVICE_URL || "http://localhost:8000";
+    if (!appServiceUrl.startsWith("http://") && !appServiceUrl.startsWith("https://")) {
+      appServiceUrl = "http://localhost:8000";
+    }
 
     return [{ source: "/backend-api/:path*", destination: `${appServiceUrl}/:path*` }];
   },
