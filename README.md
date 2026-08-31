@@ -167,6 +167,6 @@ ScamGuard-AI/
 
 ## 👤 Author & Project Maintainer
 
-- **Project Lead & Author**: **Prerna P Joyce** ([@PreranaPJois-123](https://github.com/PreranaPJois-123))
+- **Project Lead & Author**: **Prerana P Jois** ([@PreranaPJois-123](https://github.com/PreranaPJois-123))
 - **Repository**: [https://github.com/PreranaPJois-123/ScamGuard-AI](https://github.com/PreranaPJois-123/ScamGuard-AI)
 - **Project**: ScamGuard AI — AI-Powered Online Scam & Fraud Detection System
