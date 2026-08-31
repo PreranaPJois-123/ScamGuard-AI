@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, memo } from "react";
+import { useState, useCallback, useEffect, memo } from "react";
 import dynamic from "next/dynamic";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -27,6 +27,11 @@ export const BatchScanner = memo(function BatchScanner() {
   const [items, setItems] = useState<ScanItem[]>([]);
   const [isScanning, setIsScanning] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
+
+  useEffect(() => {
+    // Proactively pre-warm both app service and ML inference service in background
+    fetch("/backend-api/api/v1/health").catch(() => {});
+  }, []);
 
   const handleScan = useCallback(async (texts: string[], files: File[], inputType: string) => {
     const newItems: ScanItem[] = [];

@@ -28,18 +28,33 @@ class MessageService:
         if text and len(text) > 4000:
             text = text[:4000]
 
-        try:
-            response = httpx.post(
-                f"{settings.ML_SERVICE_URL}/api/v1/internal/predict",
-                json={"text": text, "input_type": input_type, "metadata": metadata},
-                timeout=60.0,
-            )
-            response.raise_for_status()
-            data = response.json()
-        except (httpx.HTTPError, ValueError) as exc:
+        data = None
+        last_exc = None
+        for attempt in range(2):
+            try:
+                response = httpx.post(
+                    f"{settings.ML_SERVICE_URL}/api/v1/internal/predict",
+                    json={"text": text, "input_type": input_type, "metadata": metadata},
+                    timeout=50.0,
+                )
+                response.raise_for_status()
+                data = response.json()
+                break
+            except (httpx.ConnectTimeout, httpx.ReadTimeout, httpx.ConnectError) as exc:
+                last_exc = exc
+                if attempt == 0:
+                    import time
+                    time.sleep(2.5)
+                    continue
+                break
+            except (httpx.HTTPError, ValueError) as exc:
+                last_exc = exc
+                break
+
+        if data is None:
             raise MlServiceUnavailableError(
                 "The scam-detection model is temporarily unavailable. Please try again shortly."
-            ) from exc
+            ) from last_exc
 
         message = self.messages.create(user_id, text)
         prediction = Prediction(
