@@ -46,9 +46,11 @@ const nextConfig = {
     // Runs in the Next.js server (Node process, or Vercel's serverless
     // functions), never in the browser -- so from the browser's point of
     // view, every request stays same-origin.
-    let appServiceUrl = process.env.APP_SERVICE_URL || "http://localhost:8000";
-    if (!appServiceUrl.startsWith("http://") && !appServiceUrl.startsWith("https://")) {
-      appServiceUrl = "http://localhost:8000";
+    let appServiceUrl = process.env.APP_SERVICE_URL;
+    if (!appServiceUrl || (!appServiceUrl.startsWith("http://") && !appServiceUrl.startsWith("https://"))) {
+      appServiceUrl = process.env.NODE_ENV === "development"
+        ? "http://localhost:8000"
+        : "https://scamguard-app-service.onrender.com";
     }
 
     return [{ source: "/backend-api/:path*", destination: `${appServiceUrl}/:path*` }];

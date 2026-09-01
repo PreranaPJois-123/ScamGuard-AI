@@ -2,14 +2,18 @@ import re
 import dataclasses
 
 class ThreatLevelClassifier:
-    def classify(self, threat_score: float) -> str:
-        if threat_score < 0.2:
-            return "very_low"
-        elif threat_score < 0.4:
-            return "low"
-        elif threat_score < 0.6:
+    def classify(self, threat_score: float, verdict: str = "scam") -> str:
+        if verdict == "legitimate":
+            if threat_score < 0.20:
+                return "very_low"
+            elif threat_score < 0.40:
+                return "low"
             return "medium"
-        elif threat_score < 0.8:
+        if threat_score < 0.35:
+            return "low"
+        elif threat_score < 0.65:
+            return "medium"
+        elif threat_score < 0.80:
             return "high"
         else:
             return "critical"
@@ -65,8 +69,11 @@ class RiskBreakdownCalculator:
 
 class ExplanationGenerator:
     def generate(self, verdict: str, probability: float, scam_category: str, top_tokens: list, entities: dict, breakdown: dict, input_type: str = "TEXT", metadata: dict = None) -> tuple[str, str]:
-        if verdict == "safe":
-            return "The input appears to be legitimate.", "No significant scam indicators were detected. The input appears to be legitimate."
+        if verdict in ("safe", "legitimate"):
+            return (
+                "The input appears to be safe and legitimate.",
+                "No significant scam or phishing indicators were detected. The message exhibits standard, genuine communication patterns and is safe to interact with.",
+            )
             
         executive_summary = f"The input exhibits characteristics of a {scam_category} scam." if scam_category else f"The input has been classified as {verdict}."
             
@@ -202,7 +209,7 @@ class ExplainableAIService:
 
     def enrich(self, prediction_result, raw_text: str, input_type: str = "TEXT", metadata: dict | None = None):
         metadata = metadata or {}
-        threat_level = self.threat_classifier.classify(prediction_result.threat_score)
+        threat_level = self.threat_classifier.classify(prediction_result.threat_score, prediction_result.verdict)
         entities = self.entity_highlighter.extract(raw_text)
         
         tokens = []

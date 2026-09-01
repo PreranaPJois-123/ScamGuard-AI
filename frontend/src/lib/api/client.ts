@@ -24,10 +24,10 @@ interface RequestOptions {
 }
 
 // These are same-origin paths, rewritten server-side to the real backend
-// URLs by next.config.js's rewrites() -- see that file for why. The
-// browser never makes a cross-origin request to either backend.
+// URLs by next.config.js's rewrites() -- see that file for why.
 const APP_API_URL = "/backend-api/api/v1";
-const API_TIMEOUT_MS = 30000;
+const FALLBACK_API_URL = "https://scamguard-app-service.onrender.com/api/v1";
+const API_TIMEOUT_MS = 45000;
 
 let refreshPromise: Promise<TokenPair | null> | null = null;
 
@@ -114,7 +114,7 @@ function mapFetchError(error: unknown): never {
 export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { method = "GET", body, auth = true, baseUrl = APP_API_URL } = options;
 
-  const doFetch = async (): Promise<Response> => {
+  const doFetch = async (urlBase: string): Promise<Response> => {
     const headers: Record<string, string> = {};
     if (!(body instanceof FormData)) {
       headers["Content-Type"] = "application/json";
@@ -124,24 +124,51 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
       const token = getAccessToken();
       if (token) headers.Authorization = `Bearer ${token}`;
     }
-    return fetchWithTimeout(`${baseUrl}${path}`, {
+    return fetchWithTimeout(`${urlBase}${path}`, {
       method,
       headers,
       body: body !== undefined ? (body instanceof FormData ? body : JSON.stringify(body)) : undefined,
     });
   };
 
-  let response: Response;
+  let response: Response | undefined;
   try {
-    response = await doFetch();
+    response = await doFetch(baseUrl);
   } catch (error) {
-    mapFetchError(error);
+    if (baseUrl === APP_API_URL && typeof window !== "undefined") {
+      try {
+        response = await doFetch(FALLBACK_API_URL);
+      } catch {
+        mapFetchError(error);
+      }
+    } else {
+      mapFetchError(error);
+    }
+  }
+
+  // Handle gateway timeout (504/502) on Vercel reverse proxy by retrying directly
+  if (response && (response.status === 502 || response.status === 504) && baseUrl === APP_API_URL && typeof window !== "undefined") {
+    try {
+      const directResp = await doFetch(FALLBACK_API_URL);
+      if (directResp.ok) {
+        response = directResp;
+      }
+    } catch {
+      // Keep existing response
+    }
+  }
+
+  if (!response) {
+    throw new ApiError(0, {
+      error_code: "NETWORK_ERROR",
+      message: "Unable to connect to ScamGuard backend service. Please try again in a few seconds.",
+    });
   }
 
   if (response.status === 401 && auth && getRefreshToken()) {
     const refreshed = await refreshOnce();
     if (refreshed) {
-      response = await doFetch();
+      response = await doFetch(baseUrl);
     }
   }
 

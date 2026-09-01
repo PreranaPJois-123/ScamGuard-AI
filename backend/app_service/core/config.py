@@ -61,7 +61,7 @@ class Settings(BaseSettings):
     # Storing this as a str (a "simple" type, never JSON-decoded) and
     # parsing it ourselves via the property below avoids the bug
     # entirely.
-    CORS_ORIGINS: str = "http://localhost:3000"
+    CORS_ORIGINS: str = "http://localhost:3000,https://frontend-psi-ebon-83.vercel.app"
 
     # Rate limiting
     RATE_LIMIT_DEFAULT: str = "100/minute"

@@ -10,11 +10,14 @@ interface ScanSummaryProps {
 
 function getScanStatus(result: AnalysisResult) {
   const tl = result.threat_level;
+  if (result.verdict === "legitimate") {
+    if (tl === "medium") return { label: "Moderate Risk", icon: ShieldQuestion, colorClass: "text-risk-medium bg-risk-medium/10 border-risk-medium/30" };
+    if (tl === "low") return { label: "Low Risk", icon: ShieldCheck, colorClass: "text-risk-low bg-risk-low/10 border-risk-low/30" };
+    return { label: "Safe", icon: ShieldCheck, colorClass: "text-risk-low bg-risk-low/10 border-risk-low/30" };
+  }
   if (tl === "critical") return { label: "Critical Threat", icon: ShieldAlert, colorClass: "text-risk-critical bg-risk-critical/10 border-risk-critical/30" };
   if (tl === "high") return { label: "High Risk", icon: ShieldAlert, colorClass: "text-risk-high bg-risk-high/10 border-risk-high/30" };
-  if (tl === "medium" || result.verdict !== "legitimate") return { label: "Suspicious", icon: ShieldQuestion, colorClass: "text-risk-medium bg-risk-medium/10 border-risk-medium/30" };
-  if (tl === "low") return { label: "Low Risk", icon: ShieldCheck, colorClass: "text-risk-low bg-risk-low/10 border-risk-low/30" };
-  return { label: "Safe", icon: ShieldCheck, colorClass: "text-risk-low bg-risk-low/10 border-risk-low/30" };
+  return { label: "Suspicious", icon: ShieldQuestion, colorClass: "text-risk-medium bg-risk-medium/10 border-risk-medium/30" };
 }
 
 export function ScanSummary({ result }: ScanSummaryProps) {

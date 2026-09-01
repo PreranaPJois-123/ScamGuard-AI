@@ -55,8 +55,9 @@ class PredictionService:
         raw_result = self._engine.predict(request.text)
         tokens, features = self._engine.transform(request.text)
 
-        confidence = self._confidence_calculator.calculate(raw_result.scam_probability)
-        threat = self._threat_scorer.assess(raw_result.scam_probability, tokens)
+        threat = self._threat_scorer.assess(raw_result.scam_probability, tokens, request.text)
+        final_probability = threat.calibrated_probability if threat.calibrated_probability > 0 else raw_result.scam_probability
+        confidence = self._confidence_calculator.calculate(final_probability)
 
         top_tokens = self._explainer.explain(
             estimator=self._engine.estimator,
@@ -64,12 +65,12 @@ class PredictionService:
             message_features=features,
         )
 
-        verdict = self._classify_verdict(raw_result.scam_probability, threat.scam_category)
+        verdict = self._classify_verdict(final_probability, threat.scam_category)
         latency_ms = round((time.perf_counter() - start) * 1000, 2)
 
         result = PredictionResult(
             verdict=verdict,
-            scam_probability=round(raw_result.scam_probability, 4),
+            scam_probability=round(final_probability, 4),
             risk_level=threat.risk_level,
             scam_category=threat.scam_category,
             confidence_score=confidence,
@@ -87,6 +88,6 @@ class PredictionService:
     def _classify_verdict(scam_probability: float, scam_category: str | None) -> str:
         if scam_probability < 0.5:
             return "legitimate"
-        if scam_category == "phishing_link":
+        if scam_category in ("phishing", "phishing_link"):
             return "phishing"
         return "scam"
