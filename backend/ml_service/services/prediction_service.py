@@ -88,6 +88,4 @@ class PredictionService:
     def _classify_verdict(scam_probability: float, scam_category: str | None) -> str:
         if scam_probability < 0.5:
             return "legitimate"
-        if scam_category in ("phishing", "phishing_link"):
-            return "phishing"
         return "scam"
