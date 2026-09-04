@@ -10,15 +10,10 @@ const THEME_SCRIPT_CSP_HASH = "sha256-r2qJBVNKhKFz19zcP4wjY56kkrNRb8V7qorp5nWUlh
 const CONTENT_SECURITY_POLICY = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline'",
-  // 'unsafe-inline' for styles only: token-chip.tsx sets a computed,
-  // per-request background color via the style attribute, which can't
-  // be hashed ahead of time. Inline STYLE injection is a materially
-  // weaker attack primitive than inline SCRIPT injection (which is
-  // fully locked down above), so this is a deliberate, scoped tradeoff.
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data:",
   "font-src 'self'",
-  "connect-src 'self'",
+  "connect-src 'self' https://scamguard-app-service.onrender.com https://*.onrender.com http://localhost:8000 http://127.0.0.1:8000",
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",

@@ -1,3 +1,14 @@
+import sys
+from pathlib import Path
+
+# Ensure backend root is always present in sys.path for unpickling ml_common artifacts
+_BACKEND_DIR = Path(__file__).resolve().parent.parent
+if str(_BACKEND_DIR) not in sys.path:
+    sys.path.insert(0, str(_BACKEND_DIR))
+_ROOT_DIR = _BACKEND_DIR.parent
+if str(_ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(_ROOT_DIR))
+
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
