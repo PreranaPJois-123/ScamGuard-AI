@@ -59,8 +59,11 @@ class MessageService:
         self.predictions = PredictionRepository(db)
 
     def analyze(self, user_id: uuid.UUID | None, text: str, input_type: str = "TEXT", metadata: dict | None = None) -> AnalysisResult:
+        if text is None or not text.strip():
+            raise ValidationAppError("Message text must not be empty.")
+
         # Clamp text to 4000 characters to strictly respect database and ML schema constraints
-        if text and len(text) > 4000:
+        if len(text) > 4000:
             text = text[:4000]
 
         data = None
@@ -115,7 +118,7 @@ class MessageService:
             try:
                 from ml_service.inference.threat_scorer import ThreatScorer
                 from ml_service.services.explainable_ai import ExplainableAIService
-                from ml_common.domain.value_objects import PredictionResult, TokenContribution
+                from ml_common.domain.value_objects import PredictionResult, FeatureContribution
                 from ml_common.preprocessing.tokenizer import tokenize
 
                 tokens = tokenize(text)
@@ -124,7 +127,7 @@ class MessageService:
                 prob = threat.calibrated_probability if threat.calibrated_probability > 0 else (0.95 if threat.risk_level == "high" else 0.08)
                 verdict = "legitimate" if prob < 0.5 else "scam"
 
-                token_contributions = [TokenContribution(token=tok, weight=0.85) for tok in tokens[:5]]
+                token_contributions = [FeatureContribution(token=tok, weight=0.85) for tok in tokens[:5]]
                 res = PredictionResult(
                     verdict=verdict,
                     scam_probability=prob,
