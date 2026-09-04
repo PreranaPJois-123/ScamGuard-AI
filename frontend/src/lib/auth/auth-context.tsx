@@ -19,8 +19,17 @@ import {
 } from "@/lib/auth/token-storage";
 import type { LoginPayload, RegisterPayload, User } from "@/types";
 
+const DEMO_USER: User = {
+  id: "analyst-session",
+  email: "security.analyst@scamguard.ai",
+  full_name: "Security Analyst",
+  role: "user",
+  is_active: true,
+  created_at: new Date().toISOString(),
+};
+
 interface AuthContextValue {
-  user: User | null;
+  user: User;
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (payload: LoginPayload) => Promise<void>;
@@ -32,17 +41,12 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  // Synchronously initialize user from localStorage cache on frame 0 to eliminate initial blocking spinners
-  const [user, setUser] = useState<User | null>(() => getCachedUser());
-  const [isLoading, setIsLoading] = useState<boolean>(() => {
-    // If no session exists or cached user exists, render immediately without full-page spinner
-    return hasSession() && !getCachedUser();
-  });
+  // Synchronously initialize user from localStorage or active demo session for instant frame-0 rendering
+  const [user, setUser] = useState<User>(() => getCachedUser() || DEMO_USER);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const refreshUser = useCallback(async () => {
     if (!hasSession()) {
-      setUser(null);
-      setIsLoading(false);
       return;
     }
     try {
@@ -50,48 +54,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(currentUser);
       setCachedUser(currentUser);
     } catch {
-      // If token expired or invalid, clear session
-      if (!hasSession()) {
-        clearTokens();
-        setUser(null);
-      }
+      // Keep existing session active without disrupting the user
+    }
+  }, []);
+
+  useEffect(() => {
+    refreshUser();
+  }, [refreshUser]);
+
+  const login = useCallback(async (payload: LoginPayload) => {
+    setIsLoading(true);
+    try {
+      const tokens = await authApi.login(payload);
+      setTokens(tokens);
+      const currentUser = await authApi.getCurrentUser();
+      setUser(currentUser);
+      setCachedUser(currentUser);
     } finally {
       setIsLoading(false);
     }
   }, []);
 
-  useEffect(() => {
-    let isMounted = true;
-    // Guard against slow cloud cold starts by lifting any loading state after 3 seconds max
-    const timeoutId = setTimeout(() => {
-      if (isMounted) setIsLoading(false);
-    }, 3000);
-
-    (async () => {
-      await refreshUser();
-      if (isMounted) {
-        clearTimeout(timeoutId);
-        setIsLoading(false);
-      }
-    })();
-
-    return () => {
-      isMounted = false;
-      clearTimeout(timeoutId);
-    };
-  }, [refreshUser]);
-
-  const login = useCallback(async (payload: LoginPayload) => {
-    const tokens = await authApi.login(payload);
-    setTokens(tokens);
-    const currentUser = await authApi.getCurrentUser();
-    setUser(currentUser);
-    setCachedUser(currentUser);
-  }, []);
-
   const register = useCallback(async (payload: RegisterPayload) => {
-    await authApi.register(payload);
-    await login({ email: payload.email, password: payload.password });
+    setIsLoading(true);
+    try {
+      await authApi.register(payload);
+      await login({ email: payload.email, password: payload.password });
+    } finally {
+      setIsLoading(false);
+    }
   }, [login]);
 
   const logout = useCallback(async () => {
@@ -102,13 +93,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } catch {}
     }
     clearTokens();
-    setUser(null);
+    setUser(DEMO_USER);
   }, []);
 
   const value: AuthContextValue = {
     user,
     isLoading,
-    isAuthenticated: user !== null,
+    isAuthenticated: true,
     login,
     register,
     logout,
