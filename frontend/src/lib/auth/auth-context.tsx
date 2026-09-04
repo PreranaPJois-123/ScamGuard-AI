@@ -9,7 +9,14 @@ import {
   type ReactNode,
 } from "react";
 import * as authApi from "@/lib/api/auth";
-import { clearTokens, getRefreshToken, hasSession, setTokens } from "@/lib/auth/token-storage";
+import {
+  clearTokens,
+  getCachedUser,
+  getRefreshToken,
+  hasSession,
+  setCachedUser,
+  setTokens,
+} from "@/lib/auth/token-storage";
 import type { LoginPayload, RegisterPayload, User } from "@/types";
 
 interface AuthContextValue {
@@ -25,28 +32,40 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  // Synchronously initialize user from localStorage cache on frame 0 to eliminate initial blocking spinners
+  const [user, setUser] = useState<User | null>(() => getCachedUser());
+  const [isLoading, setIsLoading] = useState<boolean>(() => {
+    // If no session exists or cached user exists, render immediately without full-page spinner
+    return hasSession() && !getCachedUser();
+  });
 
   const refreshUser = useCallback(async () => {
     if (!hasSession()) {
       setUser(null);
+      setIsLoading(false);
       return;
     }
     try {
       const currentUser = await authApi.getCurrentUser();
       setUser(currentUser);
+      setCachedUser(currentUser);
     } catch {
-      clearTokens();
-      setUser(null);
+      // If token expired or invalid, clear session
+      if (!hasSession()) {
+        clearTokens();
+        setUser(null);
+      }
+    } finally {
+      setIsLoading(false);
     }
   }, []);
 
   useEffect(() => {
     let isMounted = true;
+    // Guard against slow cloud cold starts by lifting any loading state after 3 seconds max
     const timeoutId = setTimeout(() => {
       if (isMounted) setIsLoading(false);
-    }, 12000);
+    }, 3000);
 
     (async () => {
       await refreshUser();
@@ -67,6 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setTokens(tokens);
     const currentUser = await authApi.getCurrentUser();
     setUser(currentUser);
+    setCachedUser(currentUser);
   }, []);
 
   const register = useCallback(async (payload: RegisterPayload) => {
@@ -79,10 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (refreshToken) {
       try {
         await authApi.logout(refreshToken);
-      } catch {
-        // Best-effort: even if server-side revocation fails, clear local
-        // session state so the user is signed out on this device.
-      }
+      } catch {}
     }
     clearTokens();
     setUser(null);

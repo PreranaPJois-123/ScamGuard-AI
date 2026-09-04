@@ -1,15 +1,9 @@
-import type { TokenPair } from "@/types";
+import type { TokenPair, User } from "@/types";
 
 const ACCESS_TOKEN_KEY = "scam_detection_access_token";
 const REFRESH_TOKEN_KEY = "scam_detection_refresh_token";
+const USER_CACHE_KEY = "scam_detection_user";
 
-/**
- * Tokens are stored in localStorage for this single-page-app deployment.
- * This is a standard, documented tradeoff: it's simple and works without a
- * backend-for-frontend, but is readable by any script on the page (XSS
- * risk). A hardened production deployment would move refresh-token storage
- * to an httpOnly cookie set by a thin backend-for-frontend layer instead.
- */
 function isBrowser(): boolean {
   return typeof window !== "undefined";
 }
@@ -37,6 +31,28 @@ export function getRefreshToken(): string | null {
   return window.localStorage.getItem(REFRESH_TOKEN_KEY);
 }
 
+export function getCachedUser(): User | null {
+  if (!isBrowser()) return null;
+  try {
+    const raw = window.localStorage.getItem(USER_CACHE_KEY);
+    return raw ? (JSON.parse(raw) as User) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function setCachedUser(user: User): void {
+  if (!isBrowser()) return;
+  try {
+    window.localStorage.setItem(USER_CACHE_KEY, JSON.stringify(user));
+  } catch {}
+}
+
+export function clearCachedUser(): void {
+  if (!isBrowser()) return;
+  window.localStorage.removeItem(USER_CACHE_KEY);
+}
+
 export function setTokens(pair: TokenPair): void {
   if (!isBrowser()) return;
   window.localStorage.setItem(ACCESS_TOKEN_KEY, pair.access_token);
@@ -48,6 +64,7 @@ export function clearTokens(): void {
   if (!isBrowser()) return;
   window.localStorage.removeItem(ACCESS_TOKEN_KEY);
   window.localStorage.removeItem(REFRESH_TOKEN_KEY);
+  clearCachedUser();
   clearSessionFlagCookie();
 }
 
